@@ -1,0 +1,78 @@
+---
+:source:
+  :path: test
+  :file: test_comandos.c
+:successes:
+- :test: 'test_Comando_invalido '
+  :line: 13
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_IDq '
+  :line: 27
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_comadoreste '
+  :line: 39
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_apagar '
+  :line: 50
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_apagar_cortado '
+  :line: 61
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_IDq_c_espacio_al_final '
+  :line: 74
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_IDq_c_espacios_al_final '
+  :line: 86
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_ID_incompleto '
+  :line: 100
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_ANG_q '
+  :line: 112
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_ANG_q_c_espacio '
+  :line: 123
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_ANG_q_c_numero '
+  :line: 135
+  :message: ''
+  :unity_test_time: 0
+- :test: test_ANG_sin_parametro
+  :line: 148
+  :message: ''
+  :unity_test_time: 0
+- :test: test_ANG_Space
+  :line: 156
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_ANG_c_numero '
+  :line: 164
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_ANG_c_numero_c_2_espacios '
+  :line: 176
+  :message: ''
+  :unity_test_time: 0
+- :test: 'test_ANG_c_numero_c_espacios_al_final '
+  :line: 188
+  :message: ''
+  :unity_test_time: 0
+:failures: []
+:ignores: []
+:counts:
+  :total: 16
+  :passed: 16
+  :failed: 0
+  :ignored: 0
+:stdout: []
+:time: 1.8555285000002186
