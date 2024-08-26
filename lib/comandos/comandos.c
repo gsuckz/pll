@@ -9,11 +9,12 @@
 #define MAX_N_PARAMETROS 1
 
 typedef enum Command{
-    ANG,
-    ANGULO,
-    ANGULOq,
-    ANGq, //ANG?
     APAGAR, 
+    BARRER,
+    FREC,
+    FRECUENCIA,
+    FRECUENCIAq,
+    FRECq, //ANG?
     IDq, //ID?
     RESET_CMD,
     DESCO=255
@@ -36,11 +37,12 @@ typedef struct CMD{
 
 
 static char const * const tabla_cmd[N_COMANDOS] = {
-    "ang\n1",
-    "angulo\n1",
-    "angulo?",
-    "ang?",
     "apagar",
+    "barrer",
+    "frec\n1",
+    "frecuencia\n1",
+    "frecuencia?",
+    "frec?",
     "id?",
     "reset"
 };
@@ -62,10 +64,14 @@ typedef struct  Palabra
 }Palabra;
 
 static const UART *uart;
+static const I2C *i2c;
 
 void Comandos_init(const UART *uart_)
 {
     uart = uart_;
+}
+void comandos_i2c(const I2C *i2c_){
+    i2c = i2c_;
 }
 
 static void agregarLetra(Palabra * palabra, char c){   
@@ -120,25 +126,26 @@ static bool esTerminador(char c){
 
 static void procesar_cmd(CMD * cmd){  
     switch (cmd->cmd)
-    {        case ANG:
-             case ANGULO: //FALLTHRU
-            if(cmd->parametro[0] <=180  ){ //&& (cmd->code = OK)
-                    //set_servo_angle(cmd->parametro[0]);
-                    uart->write_string("Angulo fijado en: ");
+    {        case FREC:
+             case FRECUENCIA: //FALLTHRU
+            if(cmd->parametro[0] >= 11800 || cmd->parametro[0] <= 106000 ){ //&& (cmd->code = OK)
+                    //set_servo_angle(cmd->parametro[0]); Escribir en I2C valor del divisor de frecuencia
+                    i2c->write_freq(cmd->parametro[0]);
+                    uart->write_string("Frecuencia fijada en: ");
                     uart->write_numero(cmd->parametro[0]);
                     uart->write('\n'); 
                     uart->write('\r'); 
                 }else{
-                uart->write_string("Angulo Invalido, ingrege un valor entre 0-180\n\r"); 
+                uart->write_string("Frecuencia, ingrege un valor entero entre 10600-11800 MHz\n\r"); 
                 }                     
-        break;case ANGq:
-            case ANGULOq: //FALLTHRU
-            uart->write_string("Angulo fijado en: ");
-            uart->write_numero(123);//get_servo_angle()); 
+        break;case FRECq:
+            case FRECUENCIAq: //FALLTHRU
+            uart->write_string("Frecuencia fijada en: ");
+            uart->write_numero( i2c->read_freq() );//get_servo_angle()); leer registro del Zarlink SP5769
             uart->write('\n');           
             uart->write('\r');           
         break;case IDq:
-            uart->write_string("Controlador Servomotor v0.1\n\r");
+            uart->write_string("Sintetizador de Frecuencias en Banda Ku v0.1\n\r");
         break;default:
         break;
     }

@@ -3,6 +3,9 @@
 #include <BluetoothSerial.h>
 #include "comandos.h"
 
+#define XTAL_F 4
+#define R_DIV 64
+
 BluetoothSerial SerialBT;
 const int zarlink = 0x58; // Dirección I2C del Zarlink SP5769
 
@@ -16,34 +19,6 @@ void configureSynth() {
   Serial.println("Sintetizador configurado");
 }
 
-void setFrequency(int frequency) {
-  // Función para configurar la frecuencia del SP5769
-  byte freqHighByte = (frequency >> 8) & 0x7F;
-  byte freqLowByte = frequency & 0xFF;
-
-  Wire.beginTransmission(zarlink);
-  Wire.write(zarlink); // Dirección de registro de frecuencia (ejemplo)
-  Wire.write(freqHighByte);
-  Wire.write(freqLowByte);
-  Wire.endTransmission();
-
-  Serial.println("Frecuencia configurada a " + String(frequency) + " Hz");
-}
-
-bool compareStrings(String& str1, String& str2) {
-  if (str1.length() != str2.length()) {
-    return false;  // Si las longitudes son diferentes, las cadenas no son iguales
-  }
-
-  for (int i = 0; i < str1.length(); i++) {
-    if (str1[i] != str2[i]) {
-      return false;  // Si algún carácter no coincide, las cadenas no son iguales
-    }
-  }
-
-  return true;  // Las cadenas son iguales
-}
-
 
 extern "C"{
     static void UART_write_string(const char *str){
@@ -55,23 +30,33 @@ extern "C"{
     static void UART_write(int c){
         SerialBT.write(static_cast<uint8_t>(c));
     }
+    static void I2C_write_freq(int freq){
+        int div = freq * (R_DIV/(XTAL_F*4)); 
+        byte divH = (div >> 8) & 0x7F;
+        byte divL = div & 0xFF;
+        Wire.beginTransmission(zarlink);
+        Wire.write(divH);
+        Wire.write(divL);
+        Wire.endTransmission();
+        Serial.println("Frecuencia configurada a " + String(freq) + " Hz");
+    }
+    static int I2C_read_freq(){
+        Wire.beginTransmission(zarlink);
+        return Wire.read();
+    }
 }
 
 void setup() {
   static const UART uart ={.write_string=UART_write_string,.write_numero=UART_write_numero,.write=UART_write};
   // Inicia la comunicación serial para depuración
   Serial.begin(9600);
-  
   // Inicia la comunicación Bluetooth
   SerialBT.begin("ESP32_BT"); // Nombre del dispositivo Bluetooth
   Serial.println("Bluetooth Iniciado. Esperando conexión...");
-
   // Inicia la comunicación I2C
   Wire.begin();
-
   // Configuración inicial del sintetizador (ejemplo)
   configureSynth();
-
   Comandos_init(&uart);
 }
 
