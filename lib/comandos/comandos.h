@@ -1,34 +1,20 @@
 
 #ifndef COMANDOS_H
 #define COMANDOS_H
-#define N_COMANDOS 7
-#define MAX_N_PARAMETROS 1
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
+typedef struct UART{
+    void (*write_string)(const char *str);
+    void (*write_numero)(int num);
+    void (*write)(int c); 
+}UART;
 
-typedef enum Command{
-    ANG,
-    ANGULO,
-    ANGULOq,
-    ANGq, //ANG?
-    APAGAR, 
-    IDq, //ID?
-    RESET_CMD,
-    DESCO=255
-}Command;
-
-typedef enum Codigo{
-    OK,
-    none,
-    SyntaxError,
-    FaltanParametros,
-    SobranParametros
-}Codigo;
-
-typedef struct CMD{
-    Command cmd;
-    int parametro[9];
-    Codigo code;
-}CMD;
+void Comandos_init(const UART *uart);
 
 /**
  * @brief Envia un caracter para ser procesado
@@ -38,6 +24,11 @@ typedef struct CMD{
  * @return true 
  * @return false 
  */
-bool getCommand(CMD * cmd, char c);
+bool Comandos_procesa(char c);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -3,11 +3,37 @@
 #include <stdint.h>
 #include "buffer.h"
 #include "numeros.h"
-#include "TIMER.h"
 
-#ifndef PIO_UNIT_TESTING
-#include "UART.h"
-#endif
+
+#define N_COMANDOS 7
+#define MAX_N_PARAMETROS 1
+
+typedef enum Command{
+    ANG,
+    ANGULO,
+    ANGULOq,
+    ANGq, //ANG?
+    APAGAR, 
+    IDq, //ID?
+    RESET_CMD,
+    DESCO=255
+}Command;
+
+typedef enum Codigo{
+    OK,
+    none,
+    SyntaxError,
+    FaltanParametros,
+    SobranParametros
+}Codigo;
+
+typedef struct CMD{
+    Command cmd;
+    int parametro[9];
+    Codigo code;
+}CMD;
+
+
 
 static char const * const tabla_cmd[N_COMANDOS] = {
     "ang\n1",
@@ -35,7 +61,12 @@ typedef struct  Palabra
    int n;
 }Palabra;
 
+static const UART *uart;
 
+void Comandos_init(const UART *uart_)
+{
+    uart = uart_;
+}
 
 static void agregarLetra(Palabra * palabra, char c){   
     if (palabra->max < palabra->min) {
@@ -88,51 +119,48 @@ static bool esTerminador(char c){
 }
 
 static void procesar_cmd(CMD * cmd){  
-#ifndef PIO_UNIT_TESTING
     switch (cmd->cmd)
     {        case ANG:
              case ANGULO: //FALLTHRU
             if(cmd->parametro[0] <=180  ){ //&& (cmd->code = OK)
-                    set_servo_angle(cmd->parametro[0]);
-                    UART_write_string("Angulo fijado en: ");
-                    UART_write_numero(cmd->parametro[0]);
-                    UART_write('\n'); 
-                    UART_write('\r'); 
+                    //set_servo_angle(cmd->parametro[0]);
+                    uart->write_string("Angulo fijado en: ");
+                    uart->write_numero(cmd->parametro[0]);
+                    uart->write('\n'); 
+                    uart->write('\r'); 
                 }else{
-                UART_write_string("Angulo Invalido, ingrege un valor entre 0-180\n\r"); 
+                uart->write_string("Angulo Invalido, ingrege un valor entre 0-180\n\r"); 
                 }                     
         break;case ANGq:
             case ANGULOq: //FALLTHRU
-            UART_write_string("Angulo fijado en: ");
-            UART_write_numero(get_servo_angle()); 
-            UART_write('\n');           
-            UART_write('\r');           
+            uart->write_string("Angulo fijado en: ");
+            uart->write_numero(123);//get_servo_angle()); 
+            uart->write('\n');           
+            uart->write('\r');           
         break;case IDq:
-            UART_write_string("Controlador Servomotor v0.1\n\r");
+            uart->write_string("Controlador Servomotor v0.1\n\r");
         break;default:
         break;
     }
     switch (cmd->code){
         case SyntaxError:
-            UART_write_string("Error de Syntaxis\r\n");
+            uart->write_string("Error de Syntaxis\r\n");
         break;case FaltanParametros:
-            UART_write_string("Se necesitan mas parámetros\n\r");
+            uart->write_string("Se necesitan mas parámetros\n\r");
         break; case SobranParametros:
-            UART_write_string("Demasiados Parametros para el comando\n\r");
+            uart->write_string("Demasiados Parametros para el comando\n\r");
         break; default:
         break;
     }
-#else
-    (void) cmd;
-#endif
 }
-bool getCommand(CMD * cmd, char c){
+bool Comandos_procesa(char c){
+    static CMD cmd[1];
     static Estado estado = INICIO;
     static Palabra  palabra = {.max = N_COMANDOS - 1 , .min = 0, .n = 0 };
     static Numero numero;
     static uint8_t parametroRecibido = 0 ;
     bool encontrado = 0;
-    //UART_write('\n');
+    //uart->write('\n');
     if (esTerminador(c)){
         ///Comprueba si detectó un parametro valido///
         encontrado = 1;

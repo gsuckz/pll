@@ -1,5 +1,10 @@
 #ifndef BUFFER_H
 #define BUFFER_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 #define BUFFER_MAX 64
@@ -35,4 +40,9 @@ bool buffer_leer(Buffer * self, char * caracter_p);
  * @param self 
  */
 void buffer_clr(Buffer * self);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

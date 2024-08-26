@@ -1,5 +1,10 @@
 #ifndef NUMEROS_H
 #define NUMEROS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -36,5 +41,10 @@ int getNumero(Numero * numero);
  * @return uint8_t 
  */
 uint8_t toString(int numero, char * char_n, uint8_t size );
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
