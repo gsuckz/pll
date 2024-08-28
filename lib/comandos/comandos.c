@@ -5,12 +5,13 @@
 #include "numeros.h"
 
 
-#define N_COMANDOS 7
+#define N_COMANDOS 9
 #define MAX_N_PARAMETROS 1
 
 typedef enum Command{
     APAGAR, 
     BARRER,
+    ESTADOq,
     FREC,
     FRECUENCIA,
     FRECUENCIAq,
@@ -39,8 +40,9 @@ typedef struct CMD{
 static char const * const tabla_cmd[N_COMANDOS] = {
     "apagar",
     "barrer",
+    "estado",
     "frec\n1",
-    "frecuencia\n1",
+    "frecuencia",
     "frecuencia?",
     "frec?",
     "id?",
@@ -128,24 +130,22 @@ static void procesar_cmd(CMD * cmd){
     switch (cmd->cmd)
     {        case FREC:
              case FRECUENCIA: //FALLTHRU
-            if(cmd->parametro[0] >= 11800 || cmd->parametro[0] <= 106000 ){ //&& (cmd->code = OK)
+            if(cmd->parametro[0] <= 11800 && cmd->parametro[0] >= 10600 ){ //&& (cmd->code = OK)
                     //set_servo_angle(cmd->parametro[0]); Escribir en I2C valor del divisor de frecuencia
                     i2c->write_freq(cmd->parametro[0]);
-                    uart->write_string("Frecuencia fijada en: ");
-                    uart->write_numero(cmd->parametro[0]);
-                    uart->write('\n'); 
-                    uart->write('\r'); 
                 }else{
-                uart->write_string("Frecuencia, ingrege un valor entero entre 10600-11800 MHz\n\r"); 
+                uart->write_string("Frecuencia invalida, ingrese un valor entero entre 10600-11800 MHz\n\r"); 
                 }                     
         break;case FRECq:
             case FRECUENCIAq: //FALLTHRU
             uart->write_string("Frecuencia fijada en: ");
-            uart->write_numero( i2c->read_freq() );//get_servo_angle()); leer registro del Zarlink SP5769
+            //uart->write_numero( i2c->read_state() );//get_servo_angle()); leer registro del Zarlink SP5769
             uart->write('\n');           
             uart->write('\r');           
         break;case IDq:
             uart->write_string("Sintetizador de Frecuencias en Banda Ku v0.1\n\r");
+        break;case ESTADOq:
+            i2c->read_state();
         break;default:
         break;
     }
