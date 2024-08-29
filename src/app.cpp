@@ -18,7 +18,7 @@ typedef enum i2cError{
 }i2cError;
 
 BluetoothSerial SerialBT;
-const int zarlink = 0b1100010; // Dirección I2C del Zarlink SP5769
+const int zarlink = 0b1100001; // Dirección I2C del Zarlink SP5769
 
 void enviari2c(uint8_t valor){
   i2cError error = (i2cError)valor;
