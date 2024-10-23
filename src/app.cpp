@@ -4,7 +4,8 @@
 #include "comandos.h"
 
 #define XTAL_F 4
-#define R_DIV 32
+#define R_DIV 64 //32
+#define R_DIVr 0b00000101
 #define STATUS_POR 0b10000000
 #define STATUS_PHASE_LOCK 0b01000000
 
@@ -18,7 +19,8 @@ typedef enum i2cError{
 }i2cError;
 
 BluetoothSerial SerialBT;
-const int zarlink = 0b1100001; // Dirección I2C del Zarlink SP5769
+const int zarlink = 0b1100001
+; // Dirección I2C del Zarlink SP5769
 
 void enviari2c(uint8_t valor){
   i2cError error = (i2cError)valor;
@@ -45,8 +47,8 @@ void enviari2c(uint8_t valor){
 void configureSynth() {
   // Ejemplo de configuración inicial del Zarlink SP5769
   Wire.beginTransmission(zarlink);
-  Wire.write(0b10000000 | R_DIV); // Dirección de registro (ejemplo)
-  Wire.write(0x00); // Valor de configuración (ejemplo)
+  Wire.write(0b10000000 | R_DIVr); 
+  Wire.write(0x00); 
   enviari2c( Wire.endTransmission() );
   SerialBT.println("Sintetizador configurado - Indique Frecuencia");
 }

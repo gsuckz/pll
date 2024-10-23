@@ -18,6 +18,7 @@ typedef enum Command{
     FRECq, //ANG?
     IDq, //ID?
     RESET_CMD,
+    TEST,
     DESCO=255
 }Command;
 
@@ -47,6 +48,7 @@ static char const * const tabla_cmd[N_COMANDOS] = {
     "frec?",
     "id?",
     "reset"
+    "test"
 };
 
 
@@ -146,6 +148,8 @@ static void procesar_cmd(CMD * cmd){
             uart->write_string("Sintetizador de Frecuencias en Banda Ku v0.1\n\r");
         break;case ESTADOq:
             i2c->read_state();
+        break;case TEST:
+            
         break;default:
         break;
     }
