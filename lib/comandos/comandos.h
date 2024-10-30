@@ -19,6 +19,7 @@ void Comandos_init(const UART *uart);
 typedef struct I2C{
     void (*write_freq)(int valor);
     int (*read_state)();
+    void (*write_mode)(int mode);
 }I2C;
 
 void comandos_i2c(const I2C *i2c);

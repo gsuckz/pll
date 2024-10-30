@@ -17,6 +17,12 @@ typedef enum i2cError{
   ERROR,
   timeout  
 }i2cError;
+typedef enum modo{
+  NORMAL,
+  CP_SINK,
+  CP_SOURCE,
+  CP_DISABLE
+}modo;
 
 BluetoothSerial SerialBT;
 const int zarlink = 0b1100001
@@ -72,6 +78,35 @@ extern "C"{
       Wire.write(divL);
       enviari2c(Wire.endTransmission());
     }
+    static void I2C_write_mode(int mode){
+      switch (mode){
+        case NORMAL:
+          configureSynth();
+        break;case CP_SINK:
+          Wire.beginTransmission(zarlink);
+          Wire.write(0b11000000); 
+          Wire.write(0x00); 
+          enviari2c( Wire.endTransmission() );
+          SerialBT.println("Sintetizador configurado - Indique Frecuencia");
+        break;case CP_SOURCE:
+          Wire.beginTransmission(zarlink);
+          Wire.write(0b11010000); 
+          Wire.write(0x00); 
+          enviari2c( Wire.endTransmission() );
+          SerialBT.println("Sintetizador configurado - Indique Frecuencia");
+        break;case CP_DISABLE:
+          Wire.beginTransmission(zarlink);
+          Wire.write(0b11100000); 
+          Wire.write(0x00); 
+          enviari2c( Wire.endTransmission() );
+          SerialBT.println("Sintetizador configurado - Indique Frecuencia");
+        break;}
+
+      Wire.beginTransmission(zarlink);
+      Wire.write(0);
+      Wire.write(0);
+      enviari2c(Wire.endTransmission());
+    }
     static int I2C_read_state(){
       uint8_t temp;
       //Wire.beginTransmission(zarlink);    
@@ -93,7 +128,7 @@ extern "C"{
 
 void setup() {
   static const UART uart ={.write_string=UART_write_string,.write_numero=UART_write_numero,.write=UART_write};
-  static const I2C i2c ={.write_freq=I2C_write_freq,.read_state=I2C_read_state};
+  static const I2C i2c ={.write_freq=I2C_write_freq,.read_state=I2C_read_state,.write_mode=I2C_write_mode};
   // Inicia la comunicación serial para depuración
   Serial.begin(9600);
   // Inicia la comunicación Bluetooth

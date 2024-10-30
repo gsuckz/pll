@@ -11,14 +11,17 @@
 typedef enum Command{
     APAGAR, 
     BARRER,
+    CP_disabled,
+    CP_sink,
+    CP_source,
     ESTADOq,
     FREC,
     FRECUENCIA,
     FRECUENCIAq,
     FRECq, //ANG?
     IDq, //ID?
+    INICIAR,
     RESET_CMD,
-    TEST,
     DESCO=255
 }Command;
 
@@ -41,12 +44,16 @@ typedef struct CMD{
 static char const * const tabla_cmd[N_COMANDOS] = {
     "apagar",
     "barrer",
+    "cp_dis",
+    "cp_src",
+    "cp_snk"
     "estado",
     "frec\n1",
     "frecuencia",
     "frecuencia?",
     "frec?",
     "id?",
+    "iniciar",
     "reset"
     "test"
 };
@@ -148,8 +155,14 @@ static void procesar_cmd(CMD * cmd){
             uart->write_string("Sintetizador de Frecuencias en Banda Ku v0.1\n\r");
         break;case ESTADOq:
             i2c->read_state();
-        break;case TEST:
-            
+        break;case CP_disabled:
+            i2c->write_mode(3);
+        break;case CP_sink:
+            i2c->write_mode(1);
+        break;case CP_source:
+            i2c->write_mode(2);
+        break;case INICIAR:
+            i2c->write_mode(0);
         break;default:
         break;
     }
