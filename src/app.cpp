@@ -87,19 +87,19 @@ extern "C"{
           Wire.write(0b11000000); 
           Wire.write(0x00); 
           enviari2c( Wire.endTransmission() );
-          SerialBT.println("Sintetizador configurado - Indique Frecuencia");
+          SerialBT.println("Charge PUMP --> SINK");
         break;case CP_SOURCE:
           Wire.beginTransmission(zarlink);
           Wire.write(0b11010000); 
           Wire.write(0x00); 
           enviari2c( Wire.endTransmission() );
-          SerialBT.println("Sintetizador configurado - Indique Frecuencia");
+          SerialBT.println("Charge PUMP --> SOURCE");
         break;case CP_DISABLE:
           Wire.beginTransmission(zarlink);
           Wire.write(0b11100000); 
           Wire.write(0x00); 
           enviari2c( Wire.endTransmission() );
-          SerialBT.println("Sintetizador configurado - Indique Frecuencia");
+          SerialBT.println("Charge PUMP --DISABLED--");
         break;}
 
       Wire.beginTransmission(zarlink);
