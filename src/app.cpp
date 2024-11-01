@@ -3,11 +3,38 @@
 #include <BluetoothSerial.h>
 #include "comandos.h"
 
+static struct {
+  int codigo; // 4 bits
+  int ratio; 
+} constexpr DIVISOR_REFERENCIA[]={
+  {0b0000,2},
+  {0b0001,4},
+  {0b0010,8},
+  {0b0011,16},
+  {0b0100,32},
+  {0b0101,64},
+  {0b0110,128},
+  {0b0111,256},
+  {0b1000,24},
+  {0b1001,5},
+  {0b1010,10},
+  {0b1011,20},
+  {0b1100,40},
+  {0b1101,80},
+  {0b1110,160},
+  {0b1111,320}
+};
+
+enum DIVISORES : int {
+  DIV2,DIV4,DIV8,DIV16,DIV32,DIV64,DIV128,DIV256,DIV24,DIV5,DIV10,DIV20,DIV40,DIV80,DIV160,DIV320
+};
+
 #define XTAL_F 4
-#define R_DIV 64 //32
-#define R_DIVr 0b00000101
+#define R_DIV DIVISOR_REFERENCIA[DIV40].ratio // 64 //32
+#define R_DIVr DIVISOR_REFERENCIA[DIV40].codigo
 #define STATUS_POR 0b10000000
 #define STATUS_PHASE_LOCK 0b01000000
+
 
 typedef enum i2cError{
   ENVIADO=0,
@@ -21,9 +48,11 @@ typedef enum modo{
   NORMAL,
   CP_SINK,
   CP_SOURCE,
-  CP_DISABLE
+  CP_DISABLE,
+  COMPARADOR_FASE_TEST
 }modo;
 
+modo modoactual = NORMAL;
 BluetoothSerial SerialBT;
 const int zarlink = 0b1100001
 ; // Dirección I2C del Zarlink SP5769
@@ -70,7 +99,14 @@ extern "C"{
       SerialBT.write(static_cast<uint8_t>(c));
     }
     static void I2C_write_freq(int freq){
-      int divisor = (freq * R_DIV + XTAL_F*2)/(XTAL_F*4); //redondea para arriba
+      int divisor = ((freq * R_DIV + XTAL_F*2)/(XTAL_F*4)) & 0x7FFF; //redondea para arriba
+      if(modoactual ==COMPARADOR_FASE_TEST){
+      SerialBT.println("Frecuencia");
+      SerialBT.println(freq);
+      SerialBT.println("Divisor");
+      SerialBT.println(divisor);
+      SerialBT.println("Frecuencia segun divisor y ref");
+      SerialBT.println((XTAL_F*divisor*4*R_DIV/2)/R_DIV);}
       byte divH = (divisor >> 8) & 0x7F;
       byte divL = divisor & 0xFF;
       Wire.beginTransmission(zarlink);
@@ -100,6 +136,13 @@ extern "C"{
           Wire.write(0x00); 
           enviari2c( Wire.endTransmission() );
           SerialBT.println("Charge PUMP --DISABLED--");
+        break;case COMPARADOR_FASE_TEST:
+          modoactual = COMPARADOR_FASE_TEST;
+          Wire.beginTransmission(zarlink);
+          Wire.write(0b11110000); 
+          Wire.write(0x00); 
+          enviari2c( Wire.endTransmission() );
+          SerialBT.println("Salida del comparador de fase conectada a PIN ");
         break;}
 
       Wire.beginTransmission(zarlink);
@@ -126,6 +169,7 @@ extern "C"{
     }
 }
 
+
 void setup() {
   static const UART uart ={.write_string=UART_write_string,.write_numero=UART_write_numero,.write=UART_write};
   static const I2C i2c ={.write_freq=I2C_write_freq,.read_state=I2C_read_state,.write_mode=I2C_write_mode};
@@ -140,6 +184,7 @@ void setup() {
   configureSynth();
   Comandos_init(&uart);
   comandos_i2c(&i2c);
+  modoactual = NORMAL;
 }
 
 void loop() {

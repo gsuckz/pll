@@ -5,12 +5,14 @@
 #include "numeros.h"
 
 
-#define N_COMANDOS 9
+#define N_COMANDOS 15
+
 #define MAX_N_PARAMETROS 1
 
 typedef enum Command{
     APAGAR, 
     BARRER,
+    COMP_FASE_TEST,
     CP_disabled,
     CP_sink,
     CP_source,
@@ -44,9 +46,10 @@ typedef struct CMD{
 static char const * const tabla_cmd[N_COMANDOS] = {
     "apagar",
     "barrer",
-    "cp_dis",
-    "cp_src",
-    "cp_snk"
+    "cft",
+    "cpdis",
+    "cpsnk",
+    "cpsrc",
     "estado",
     "frec\n1",
     "frecuencia",
@@ -54,7 +57,7 @@ static char const * const tabla_cmd[N_COMANDOS] = {
     "frec?",
     "id?",
     "iniciar",
-    "reset"
+    "reset",
     "test"
 };
 
@@ -161,6 +164,8 @@ static void procesar_cmd(CMD * cmd){
             i2c->write_mode(1);
         break;case CP_source:
             i2c->write_mode(2);
+        break;case COMP_FASE_TEST:
+            i2c->write_mode(4);
         break;case INICIAR:
             i2c->write_mode(0);
         break;default:
