@@ -44,7 +44,7 @@ static struct {
 enum DIVISORES : int {
   DIV2,DIV4,DIV8,DIV16,DIV32,DIV64,DIV128,DIV256,DIV24,DIV5,DIV10,DIV20,DIV40,DIV80,DIV160,DIV320
 };
-LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+LiquidCrystal lcd(D1, D2, D4, D5, D6, D7);
 
 #define XTAL_F 4
 #define R_DIV DIVISOR_REFERENCIA[DIV40].ratio // 64 //32
@@ -207,7 +207,7 @@ void setup() {
 
 
 int read_LCD_buttons()  
-  { adc_key_in = analogRead(0);      // Leemos A0
+  { adc_key_in = analogRead(2);      // Leemos A0
     // Mis botones dan:  0, 145, 329,507,743
     // Y ahora los comparamos con un margen comodo
     if (adc_key_in > 900) return btnNONE;     // Ningun boton pulsado 
@@ -229,26 +229,37 @@ void loop() {
   lcd.setCursor(0,1);
   lcd.print(frecuencia);
   lcd.setCursor(cifra_actual,1);
-  if (!mostrar) lcd.print('\0');
+  if (!mostrar) lcd.print(' ');
   if (cnt <= millis()){
      mostrar = !mostrar;
      cnt = millis() + 1000;}
   
-
+ 
   switch (read_LCD_buttons()){
     case btnRIGHT:      
       cifra_actual = (cifra_actual <  4) ? cifra_actual+1 : 0;
+      lcd.setCursor(15,1);
+      lcd.print('1');
     break;case btnLEFT:
       cifra_actual = (cifra_actual > 0) ? cifra_actual-1 :  5;
+      lcd.setCursor(15,1);
+      lcd.print('2');
     break;case btnDOWN:
       frecuencia = frecuencia  - potencias[cifra_actual] > FREC_MIN ? frecuencia - potencias[cifra_actual] : frecuencia;
+      lcd.setCursor(15,1);
+      lcd.print('3');
     break;case btnUP:
-      frecuencia = frecuencia  - potencias[cifra_actual] < FREC_MAX ? frecuencia - potencias[cifra_actual] : frecuencia;
+      frecuencia = frecuencia  + potencias[cifra_actual] < FREC_MAX ? frecuencia + potencias[cifra_actual] : frecuencia;
+      lcd.setCursor(15,1);
+      lcd.print('4');
     break;case btnSELECT:
       I2C_write_freq(frecuencia);
+      lcd.setCursor(15,1);
+      lcd.print('5');
     break;case btnNONE://FALLTHRU:
-
     break;
   }
+      lcd.setCursor(15,1);
+      lcd.print(' ');
 
 }
