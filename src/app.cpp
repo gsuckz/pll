@@ -2,7 +2,23 @@
 #include <Wire.h>
 #include <BluetoothSerial.h>
 #include "comandos.h"
+#include <LiquidCrystal.h>
+int lcd_key     = 0;
+int adc_key_in  = 0;
+#define btnRIGHT  0
+#define btnUP     1
+#define btnDOWN   2
+#define btnLEFT   3
+#define btnSELECT 4
+#define btnNONE   5
+#define FREC_MIN 10600
+#define FREC_MAX 11800
 
+const int potencias[5] = {1,10,100,1000,10000};
+int cifra_actual = 1;
+int frecuencia = FREC_MIN;
+bool mostrar = true;
+long cnt = millis() + 1000;
 static struct {
   int codigo; // 4 bits
   int ratio; 
@@ -28,13 +44,14 @@ static struct {
 enum DIVISORES : int {
   DIV2,DIV4,DIV8,DIV16,DIV32,DIV64,DIV128,DIV256,DIV24,DIV5,DIV10,DIV20,DIV40,DIV80,DIV160,DIV320
 };
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 #define XTAL_F 4
 #define R_DIV DIVISOR_REFERENCIA[DIV40].ratio // 64 //32
 #define R_DIVr DIVISOR_REFERENCIA[DIV40].codigo
 #define STATUS_POR 0b10000000
 #define STATUS_PHASE_LOCK 0b01000000
-
+#define botones 1
 
 typedef enum i2cError{
   ENVIADO=0,
@@ -99,6 +116,7 @@ extern "C"{
       SerialBT.write(static_cast<uint8_t>(c));
     }
     static void I2C_write_freq(int freq){
+      frecuencia = freq;
       int divisor = ((freq * R_DIV + XTAL_F*2)/(XTAL_F*4)) & 0x7FFF; //redondea para arriba
       if(modoactual ==COMPARADOR_FASE_TEST){
       SerialBT.println("Frecuencia");
@@ -169,7 +187,6 @@ extern "C"{
     }
 }
 
-
 void setup() {
   static const UART uart ={.write_string=UART_write_string,.write_numero=UART_write_numero,.write=UART_write};
   static const I2C i2c ={.write_freq=I2C_write_freq,.read_state=I2C_read_state,.write_mode=I2C_write_mode};
@@ -185,11 +202,53 @@ void setup() {
   Comandos_init(&uart);
   comandos_i2c(&i2c);
   modoactual = NORMAL;
+  lcd.begin(16, 2); 
 }
 
+
+int read_LCD_buttons()  
+  { adc_key_in = analogRead(0);      // Leemos A0
+    // Mis botones dan:  0, 145, 329,507,743
+    // Y ahora los comparamos con un margen comodo
+    if (adc_key_in > 900) return btnNONE;     // Ningun boton pulsado 
+    if (adc_key_in < 50)   return btnRIGHT; 
+    if (adc_key_in < 250)  return btnUP;
+    if (adc_key_in < 450)  return btnDOWN;
+    if (adc_key_in < 650)  return btnLEFT;
+    if (adc_key_in < 850)  return btnSELECT; 
+
+    return btnNONE;  // Por si todo falla
+  }
 void loop() {
   if (SerialBT.available()){
     if(Comandos_procesa(static_cast<char>(SerialBT.read())))
         Serial.println("Comando procesado!");
   }
+  lcd.setCursor(0,0);
+  lcd.print("FRECUENCIA [MHZ]");
+  lcd.setCursor(0,1);
+  lcd.print(frecuencia);
+  lcd.setCursor(cifra_actual,1);
+  if (!mostrar) lcd.print('\0');
+  if (cnt <= millis()){
+     mostrar = !mostrar;
+     cnt = millis() + 1000;}
+  
+
+  switch (read_LCD_buttons()){
+    case btnRIGHT:      
+      cifra_actual = (cifra_actual <  4) ? cifra_actual+1 : 0;
+    break;case btnLEFT:
+      cifra_actual = (cifra_actual > 0) ? cifra_actual-1 :  5;
+    break;case btnDOWN:
+      frecuencia = frecuencia  - potencias[cifra_actual] > FREC_MIN ? frecuencia - potencias[cifra_actual] : frecuencia;
+    break;case btnUP:
+      frecuencia = frecuencia  - potencias[cifra_actual] < FREC_MAX ? frecuencia - potencias[cifra_actual] : frecuencia;
+    break;case btnSELECT:
+      I2C_write_freq(frecuencia);
+    break;case btnNONE://FALLTHRU:
+
+    break;
+  }
+
 }
