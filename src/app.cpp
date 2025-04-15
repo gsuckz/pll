@@ -145,11 +145,17 @@ modo modoactual = NORMAL;
 BluetoothSerial SerialBT;
 const int zarlink = 0b1100001; // Dirección I2C del Zarlink SP5769
 
+//variables para Media Movil Exponencial
+int sensorPin = A0;
+float Y =0.0;
+float alpha = 0.4; // 0<alpha<1
+float S=Y;
+
 
 
 
 // ======= Declaración de Funciones ===========
-int getKeyId();
+int getKeyId(int);
 void fn_menu(int,String arr[],byte);
 bool fnSwitch(byte);
 void fn_variacion_frec();
@@ -246,7 +252,7 @@ void setup() {
   Serial.begin(9600);
   // Inicia la comunicación Bluetooth
   SerialBT.begin("Sintetizador de Banda Ku"); // Nombre del dispositivo Bluetooth
-  Serial.println("Bluetooth Iniciado. Esperando conexión...");
+  SerialBT.println("Bluetooth Iniciado. Esperando conexión...");
   // Inicia la comunicación I2C
   Wire.begin();
   // Configuración inicial del sintetizador (ejemplo)
@@ -259,180 +265,191 @@ void setup() {
   lcd.createChar(0,flecha);
 }
 
+int leerValor(int valor){
+  static int valores[16] = {0};
+  static int n = 0;
+  static float S;
+  n++;
+  S = S + valor - valores[n%1600];
+  SerialBT.print("Nuevo Valor:");
+  SerialBT.println(valor);
+  SerialBT.print("Suma:");
+  SerialBT.println(S/1600);
+  SerialBT.print("Indice:");
+  SerialBT.println(n);
+  valores[n] = valor;
+  valores[n%1600] = 0;
+  return (S/1600);
+}
 void loop() {
+  getKeyId((int)S);
+  Y = (float)analogRead(sensorPin);
+  S = leerValor(Y);
+  //S = (alpha*Y)+((1-alpha)*S);
   if (SerialBT.available()){ // Esto que hace ? 
     if(Comandos_procesa(static_cast<char>(SerialBT.read())))
-        Serial.println("Comando procesado!");
+        Serial.println("Comando procesado!");// SerialBT
   }
 //Detectamos si Select_key fue pulsado o no. 
-  getKeyId();
 //Pantalla Principal permitira ver los detalles del menu
-  if(level_menu == 0 ){
-    lcd.setCursor(0,0);
-    lcd.print("Estado:");
-    // estado = false; //llamamos a una funcion para saber si estoy conectado o no
-    if(estado == true) lcd.print("Conect");
-    else lcd.print("No conect");
-    lcd.setCursor(0,1);
-    if(modoTest == false){
-      lcd.print("Frec:");
-      lcd.print(frec,2);
-      lcd.print("Ghz");
-    }else{
-      lcd.print("Modo Test:");
-      lcd.print(tipoTests[testActual]);
-    }
-
-
-    if(select_button == true){
-      level_menu = 1;
-      fn_menu(contador,menu1,sizemenu1);
-      select_button = false;
-    }
+if(level_menu == 0 ){
+  lcd.setCursor(0,0);
+  lcd.print("Estado:");
+  // estado = false; //llamamos a una funcion para saber si estoy conectado o no
+  if(estado == true) lcd.print("Conect");
+  else lcd.print("No conect");
+  lcd.setCursor(0,1);
+  if(modoTest == false){
+    lcd.print("Frec:");
+    lcd.print(frec,2);
+    lcd.print("Ghz");
+  }else{
+    lcd.print("Modo Test:");
+    lcd.print(tipoTests[testActual]);
   }
-  // ############## MENU 1 ################
-  if(level_menu == 1){
-    if(fnSwitch(sizemenu1)){ //Se carga el menu
-      fn_menu(contador,menu1,sizemenu1); //muestra la posición dentro del menu
-    }
-    
-    if(select_button == true){//DUDAS (getKeyId() == SELECT_KEY)
-      if(contador == 0){ //Conectar
-        contador = 0;
-        fn_menu(contador,menuConectar,sizemenuConect);
-        level_menu = 2;
-      }
-      if(contador == 1){ // Seleccionar Frecuencia
-        contador = 0;
-        fn_menu(contador,menu2,sizemenu2);
-        level_menu = 3;
-      }
-      if(contador == 2){ // Test
-        contador = 0;
-        fn_menu(contador,menuTest,sizemenuTest);
-        level_menu = 4;
-      }
-      if(contador == 3){ //Atras
-        contador = 0;
-        level_menu = 0;
-      }
-      select_button = false;
-    }
+  if(select_button == true){
+    level_menu = 1;
+    fn_menu(contador,menu1,sizemenu1);
+    select_button = false;
   }
-  //####### FIN MENU 1 #########################
-
-  //########### MENU 2 ############
-  if(level_menu == 2){
-    if(level2_menu == 0){  
-      if(fnSwitch(sizemenuConect)){
-        fn_menu(contador,menuConectar,sizemenuConect);
-      }
-      if(select_button== true){ //obs si select esta en true
-        if(contador == 0){ //op1 menu2
-          //Aca tengo que llamar a una funcion para realizar la conexion al micro.
-          // Si el micro me responde con un OK mostrare un msj _Conectado! durante 2 seg
-          // Sino mostrare un msj _Error Conexion! durante 2 seg
-          contador = 0;
-          // fn_menu(contador,menu3,sizemenu3);
-        
-          // level2_menu = 1; // Esto me lleva a otro sub menu tal vez no es necesario...
-        }
-        if(contador == 1){ //op2  Atras...
-          contador = 0;
-          // fn_menu(contador,menu3,sizemenu3);
-          fn_menu(contador,menu1,sizemenu1);
-          level_menu = 1;
-          // level2_menu = 2;
-        }
-        select_button = false;
-      }
-    }
-    //##################### FIN MENU 2#########################
-    // ######################### MENU 3 #######################
+}
+// ############## MENU 1 ################
+if(level_menu == 1){
+  if(fnSwitch(sizemenu1)){ //Se carga el menu
+    fn_menu(contador,menu1,sizemenu1); //muestra la posición dentro del menu
   }
-  if(level_menu == 3){
-    if(fnSwitch(sizemenu2)){
+  if(select_button == true){//DUDAS (getKeyId() == SELECT_KEY)
+    if(contador == 0){ //Conectar
+      contador = 0;
+      fn_menu(contador,menuConectar,sizemenuConect);
+      level_menu = 2;
+    }
+    if(contador == 1){ // Seleccionar Frecuencia
+      contador = 0;
       fn_menu(contador,menu2,sizemenu2);
+      level_menu = 3;
     }
+    if(contador == 2){ // Test
+      contador = 0;
+      fn_menu(contador,menuTest,sizemenuTest);
+      level_menu = 4;
+    }
+    if(contador == 3){ //Atras
+      contador = 0;
+      level_menu = 0;
+    }
+    select_button = false;
+  }
+}
+//####### FIN MENU 1 #########################
 
-    if(select_button == true){ //Incrementar Decrementar Frecuencia
-      if(contador == 0){ // Muestra Frecuencia Actual
-      //Hacer algo
-        lcd.clear();
-        do{
-          lcd.setCursor(0,0);
-          lcd.print("Frec. Actual:");
-          lcd.setCursor(0,1);
-          lcd.print(frec);
-          lcd.print(" Ghz");
-        }while(getKeyId() != SELECT_KEY);
-        
+//########### MENU 2 ############
+if(level_menu == 2){
+  if(fnSwitch(sizemenuConect)){
+    fn_menu(contador,menuConectar,sizemenuConect);
+  }
+  if(select_button== true){ //obs si select esta en true
+    if(contador == 0){ //op1 Est..  Conexion
+      //Aca tengo que llamar a una funcion para realizar la conexion al micro.
+      // Si el micro me responde con un OK mostrare un msj _Conectado! durante 2 seg
+      // Sino mostrare un msj _Error Conexion! durante 2 seg
+      // SerialBT.println("Hola");
+      contador = 0;
+      // fn_menu(contador,menu3,sizemenu3);
+    
+      // level2_menu = 1; // Esto me lleva a otro sub menu tal vez no es necesario...
+    }
+    if(contador == 1){ //op2  Atras...
+      contador = 0;
+      // fn_menu(contador,menu3,sizemenu3);
+      fn_menu(contador,menu1,sizemenu1);
+      level_menu = 1;
+      // level2_menu = 2;
+    }
+    select_button = false;
+  }
+  //##################### FIN MENU 2######################### 
+}
+// ######################### MENU 3 #######################
+if(level_menu == 3){
+  if(fnSwitch(sizemenu2)){
+    fn_menu(contador,menu2,sizemenu2);
+  }
+  if(select_button == true){ //Incrementar Decrementar Frecuencia
+    if(contador == 0){ // Muestra Frecuencia Actual
+    //Hacer algo
+      lcd.clear();
+      do{
+        lcd.setCursor(0,0);
+        lcd.print("Frec. Actual:");
+        lcd.setCursor(0,1);
+        lcd.print(frec);
+        lcd.print(" Ghz");
+      }while(getKeyId((int)S) != SELECT_KEY);
+      
+      contador = 0;
+      
+      fn_menu(contador, menu2, sizemenu2);
+    }
+    if (contador == 1){ // Se modifica la Frecuencia y se la establece.
+      // Hacer algo
+      lcd.clear();
+      do{
+        fn_variacion_frec();
+        lcd.setCursor(0,0);
+        lcd.print("Frecuencia:");
+        lcd.setCursor(0,1);
+        lcd.print(frec);
+        lcd.print(" Ghz");
+      }while(getKeyId((int)S) != SELECT_KEY);       
+      
+      contador = 1;
+      modoTest = false;
+      fn_menu(contador, menu2, sizemenu2);
+    }
+    if(contador == 2){//Atras 
+      contador = 1;
+      fn_menu(contador, menu1,sizemenu1);
+      level_menu = 1;
+    }
+    select_button = false;
+  }
+}
+// ######################### MENU 4 #######################
+if(level_menu == 4){
+    if(fnSwitch(sizemenuTest)){
+      fn_menu(contador,menuTest,sizemenuTest);
+    }
+    if(select_button == true){
+      if(contador == 0){//Tarea1 = "CP_snk" => testActual
+        modoTest = true; //si se selecciona alguno de los test se activa y me modifica el inicio...
+        testActual = CP_snk;
         contador = 0;
-        
-        fn_menu(contador, menu2, sizemenu2);
+        fn_menu(contador, menuTest,sizemenuTest);
+        // level2_menu = 1;
       }
-      if (contador == 1){ // Se modifica la Frecuencia y se la establece.
-        // Hacer algo
-        lcd.clear();
-        do{
-          fn_variacion_frec();
-          lcd.setCursor(0,0);
-          lcd.print("Frecuencia:");
-          lcd.setCursor(0,1);
-          lcd.print(frec);
-          lcd.print(" Ghz");
-        }while(getKeyId() != SELECT_KEY);       
-        
+      if(contador == 1){//Tarea2 = "CP_src" => testActual
+        modoTest = true; //si se selecciona alguno de los test se activa y me modifica el inicio...
+        testActual = CP_src;
         contador = 1;
-        modoTest = false;
-        fn_menu(contador, menu2, sizemenu2);
+        fn_menu(contador,menuTest,sizemenuTest);
+        // level2_menu = 2;
       }
-      if(contador == 2){//Atras 
-        contador = 1;
-        fn_menu(contador, menu1,sizemenu1);
+      if(contador == 2){ // Tarea3 = "CP_dis" => testActual
+        modoTest = true; //si se selecciona alguno de los test se activa y me modifica el inicio...
+        testActual = CP_dis;
+        contador = 2;
+        fn_menu(contador,menuTest,sizemenuTest);
+      }
+      if(contador == 3){ // Atras
+        contador = 0;
+        fn_menu(contador,menu1,sizemenu1);
         level_menu = 1;
       }
       select_button = false;
-    }
-  }
-  if(level_menu == 4){
-    if(level2_menu == 0){
-      if(fnSwitch(sizemenuTest)){
-        fn_menu(contador,menuTest,sizemenuTest);
-      }
-      if(select_button == true){
-        if(contador == 0){//Tarea1 = "CP_snk" => testActual
-          modoTest = true; //si se selecciona alguno de los test se activa y me modifica el inicio...
-          testActual = CP_snk;
-          contador = 0;
-          fn_menu(contador, menuTest,sizemenuTest);
-          // level2_menu = 1;
-        }
-        if(contador == 1){//Tarea2 = "CP_src" => testActual
-          modoTest = true; //si se selecciona alguno de los test se activa y me modifica el inicio...
-          testActual = CP_src;
-          contador = 1;
-          fn_menu(contador,menuTest,sizemenuTest);
-          // level2_menu = 2;
-        }
-        if(contador == 2){ // Tarea3 = "CP_dis" => testActual
-          modoTest = true; //si se selecciona alguno de los test se activa y me modifica el inicio...
-          testActual = CP_dis;
-          contador = 2;
-          fn_menu(contador,menuTest,sizemenuTest);
-        }
-        if(contador == 3){ // Atras
-          contador = 0;
-          fn_menu(contador,menu1,sizemenu1);
-          level_menu = 1;
-        }
-        select_button = false;
-      }
-    }
-  }  
-
+    } 
+}  
 }
-
 // Funcion exclusiva para el sintetizador
 void configureSynth() {
   // Ejemplo de configuración inicial del Zarlink SP5769
@@ -466,19 +483,32 @@ void enviari2c(uint8_t valor){
 
 // Funciones para el Menu lcd
 
-int getKeyId(){
-  int aRead = analogRead(A0);
-  if(aRead > 1200){return 0;}
-  if(aRead > 1150){
-    delay(500);
+int getKeyId(int aRead){
+  
+
+  // SerialBT.print(aRead);
+  // SerialBT.print("\n");
+  
+// Select : 1190-1150
+
+  if(aRead > 1150){return 0;}
+  if( aRead > 1140){ //1150
+  //if(aRead>1150){ //1150
+    SerialBT.println("SELECT");
+    SerialBT.println((int)S);
     select_button = true;
     return SELECT_KEY;
   }
-  if(aRead > 1030){return LEFT_KEY;   /*Left*/}
-  if(aRead > 860){return DOWN_KEY;    /*Down*/}
-  if(aRead > 550){return UP_KEY;        /*Up*/}
-  if(aRead <30){return RIGHT_KEY;    /*Rigth*/}
-  
+  if(aRead > 1030){    SerialBT.println("LEFT");
+    SerialBT.println((int)S);
+    return LEFT_KEY;   /*Left*/}
+  if(aRead > 860){    SerialBT.println("DOWN");
+    SerialBT.println((int)S);return DOWN_KEY;    /*Down*/}
+  if(aRead > 550){    SerialBT.println("UP");
+    SerialBT.println((int)S);return UP_KEY;        /*Up*/}
+  if(aRead <30){    SerialBT.println("RIGHT");
+    SerialBT.println((int)S);return RIGHT_KEY;    /*Rigth*/}
+  delay(10);
   return 0;
 }
 
@@ -514,11 +544,11 @@ void fn_menu(int pos,String menus[],byte sizemenu){
 // Permite el desplazamiento sobre el menu actual en el que nos encontremos.
 bool fnSwitch(byte sizemenu){
   bool retorno = false;
-  if(getKeyId()==LEFT_KEY || getKeyId()== RIGHT_KEY){
-    if(getKeyId() == RIGHT_KEY ){
+  if(getKeyId((int)S)==LEFT_KEY || getKeyId((int)S)== RIGHT_KEY){
+    if(getKeyId((int)S) == RIGHT_KEY ){
       contador++;
       delay(250);
-    }else if(getKeyId() == LEFT_KEY){
+    }else if(getKeyId((int)S) == LEFT_KEY){
       contador--;
       delay(250);
     }
@@ -534,10 +564,10 @@ bool fnSwitch(byte sizemenu){
 }
 // Produce la Variación de Frecuencia con lim sup e inf 
 void fn_variacion_frec(){
-  if(getKeyId() == RIGHT_KEY){
+  if(getKeyId((int)S) == RIGHT_KEY){
     frec= frec + 0.01;
     delay(250);
-  }else if(getKeyId()== LEFT_KEY){
+  }else if(getKeyId((int)S)== LEFT_KEY){
     frec = frec - 0.01 ;
     delay(250);
   }
