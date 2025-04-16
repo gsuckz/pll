@@ -156,6 +156,7 @@ float S=Y;
 
 // ======= Declaración de Funciones ===========
 int getKeyId(int);
+int getKeyId2(int);
 void fn_menu(int,String arr[],byte);
 bool fnSwitch(byte);
 void fn_variacion_frec();
@@ -268,23 +269,25 @@ void setup() {
 int leerValor(int valor){
   static int valores[16] = {0};
   static int n = 0;
-  static float S;
+  static int S = 200;
   n++;
-  S = S + valor - valores[n%1600];
-  SerialBT.print("Nuevo Valor:");
-  SerialBT.println(valor);
-  SerialBT.print("Suma:");
-  SerialBT.println(S/1600);
-  SerialBT.print("Indice:");
-  SerialBT.println(n);
-  valores[n] = valor;
-  valores[n%1600] = 0;
-  return (S/1600);
+  S = S + valor - valores[n%16];
+  //SerialBT.print("Nuevo Valor:");
+  //SerialBT.println(valor);
+  //SerialBT.print("Promedio Actual:");
+  //SerialBT.println(S/16);
+  //SerialBT.print("Indice:");
+  //SerialBT.println(n%16);
+  //SerialBT.print("Valor viejo:");
+  //SerialBT.println(valores[n%16]);
+  valores[n%16] = valor;
+  return (S/16);
 }
 void loop() {
-  getKeyId((int)S);
-  Y = (float)analogRead(sensorPin);
+  static int button ;
+  Y = analogRead(sensorPin);
   S = leerValor(Y);
+  button = getKeyId(S);
   //S = (alpha*Y)+((1-alpha)*S);
   if (SerialBT.available()){ // Esto que hace ? 
     if(Comandos_procesa(static_cast<char>(SerialBT.read())))
@@ -309,6 +312,7 @@ if(level_menu == 0 ){
   }
   if(select_button == true){
     level_menu = 1;
+    SerialBT.println("A Menu 1");
     fn_menu(contador,menu1,sizemenu1);
     select_button = false;
   }
@@ -482,33 +486,56 @@ void enviari2c(uint8_t valor){
 }
 
 // Funciones para el Menu lcd
+int getKeyId(int Read){
+  static int previo = 0;
+  static int n = 0;
+  int actual;
+  actual = getKeyId2(Read);
+  if ((actual == previo) && actual) n++;
+  else {n = 0; previo = actual;}
+  if (n==90){
+    SerialBT.println("DETECTADO!!");
+    SerialBT.println(previo);  //SEL 1 IZQ 2 DER 5
+    n = 0; 
+    if (previo == SELECT_KEY) select_button = true;
+    return previo;}
+  return 0;
+}
 
-int getKeyId(int aRead){
+
+int getKeyId2(int aRead){
   
 
   // SerialBT.print(aRead);
   // SerialBT.print("\n");
   
-// Select : 1190-1150
+  // Select : 1190-1150
 
-  if(aRead > 1150){return 0;}
-  if( aRead > 1140){ //1150
+  if(aRead > 1190){return 0;}
+  if( aRead > 1100){ //1150
   //if(aRead>1150){ //1150
-    SerialBT.println("SELECT");
-    SerialBT.println((int)S);
-    select_button = true;
+    //SerialBT.println("SELECT");
+    //SerialBT.println((int)S);
+    //select_button = true;
     return SELECT_KEY;
   }
-  if(aRead > 1030){    SerialBT.println("LEFT");
-    SerialBT.println((int)S);
+  if(aRead > 980){    
+    //SerialBT.println("LEFT");
+    //SerialBT.println((int)S);
     return LEFT_KEY;   /*Left*/}
-  if(aRead > 860){    SerialBT.println("DOWN");
-    SerialBT.println((int)S);return DOWN_KEY;    /*Down*/}
-  if(aRead > 550){    SerialBT.println("UP");
-    SerialBT.println((int)S);return UP_KEY;        /*Up*/}
-  if(aRead <30){    SerialBT.println("RIGHT");
-    SerialBT.println((int)S);return RIGHT_KEY;    /*Rigth*/}
-  delay(10);
+  if(aRead > 860){    
+    //SerialBT.println("DOWN");
+    //SerialBT.println((int)S);
+    return DOWN_KEY;    /*Down*/}
+  if(aRead > 550){    
+    //SerialBT.println("UP");
+    //SerialBT.println((int)S);
+    return UP_KEY;        /*Up*/}
+  if(aRead <30){    
+    //SerialBT.println("RIGHT");
+    //SerialBT.println((int)S);
+    return RIGHT_KEY;    /*Rigth*/}
+  //delay(10);
   return 0;
 }
 
@@ -544,13 +571,16 @@ void fn_menu(int pos,String menus[],byte sizemenu){
 // Permite el desplazamiento sobre el menu actual en el que nos encontremos.
 bool fnSwitch(byte sizemenu){
   bool retorno = false;
-  if(getKeyId((int)S)==LEFT_KEY || getKeyId((int)S)== RIGHT_KEY){
-    if(getKeyId((int)S) == RIGHT_KEY ){
+  int boton = getKeyId(S);
+  if (boton ==0) return 0;
+  else{
+  if(boton==LEFT_KEY || boton== RIGHT_KEY){
+    if(boton == RIGHT_KEY ){
       contador++;
-      delay(250);
-    }else if(getKeyId((int)S) == LEFT_KEY){
+      //delay(250);
+    }else if(boton == LEFT_KEY){
       contador--;
-      delay(250);
+      //delay(250);
     }
     if(contador <= 0){
       contador = 0;
@@ -560,16 +590,16 @@ bool fnSwitch(byte sizemenu){
     }
     retorno = true;
   }
-  return retorno;
+  return retorno;}
 }
 // Produce la Variación de Frecuencia con lim sup e inf 
 void fn_variacion_frec(){
   if(getKeyId((int)S) == RIGHT_KEY){
     frec= frec + 0.01;
-    delay(250);
+    //(250);
   }else if(getKeyId((int)S)== LEFT_KEY){
     frec = frec - 0.01 ;
-    delay(250);
+    //delay(250);
   }
   if(frec > 11.8){
     frec = 11.8;
