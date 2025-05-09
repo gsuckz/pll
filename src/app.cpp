@@ -8,6 +8,7 @@ int lcd_key     = 0; // ?
 int adc_key_in  = 0; // ?
 // ======================
 //Definición de Macros
+#define NOTHING 0
 #define SELECT_KEY 1
 #define LEFT_KEY 2
 #define DOWN_KEY 3
@@ -145,15 +146,6 @@ modo modoactual = NORMAL;
 BluetoothSerial SerialBT;
 const int zarlink = 0b1100001; // Dirección I2C del Zarlink SP5769
 
-//variables para Media Movil Exponencial
-int sensorPin = A0;
-float Y =0.0;
-float alpha = 0.4; // 0<alpha<1
-float S=Y;
-
-
-
-
 // ======= Declaración de Funciones ===========
 int getKeyId(int);
 int getKeyId2(int);
@@ -163,6 +155,12 @@ void fn_variacion_frec();
 
 void configureSynth();
 void enviari2c(uint8_t);
+// ======= Declaración de Funciones para detección de Teclas ===========
+int getKeyId(int);
+void encontrarMaxMin(int*,int);
+int readValue(int);
+void trueValue(int);
+void textBT(int);
 
 extern "C"{
   static void UART_write_string(const char *str){
@@ -246,6 +244,15 @@ extern "C"{
   }
 }
 
+// Ultimas variables asociadas 
+// Variables Utilizadas para la detección de teclas 
+int sensorPin = A0;
+float Y;
+int lastKey = 0;
+int indice = 0;
+int mean;
+int button = 0;
+
 void setup() {
   static const UART uart ={.write_string=UART_write_string,.write_numero=UART_write_numero,.write=UART_write};
   static const I2C i2c ={.write_freq=I2C_write_freq,.read_state=I2C_read_state,.write_mode=I2C_write_mode};
@@ -266,34 +273,19 @@ void setup() {
   lcd.createChar(0,flecha);
 }
 
-int leerValor(int valor){
-  static int valores[16] = {0};
-  static int n = 0;
-  static int S = 200;
-  n++;
-  S = S + valor - valores[n%16];
-  //SerialBT.print("Nuevo Valor:");
-  //SerialBT.println(valor);
-  //SerialBT.print("Promedio Actual:");
-  //SerialBT.println(S/16);
-  //SerialBT.print("Indice:");
-  //SerialBT.println(n%16);
-  //SerialBT.print("Valor viejo:");
-  //SerialBT.println(valores[n%16]);
-  valores[n%16] = valor;
-  return (S/16);
-}
+
 void loop() {
-  static int button ;
-  Y = analogRead(sensorPin);
-  S = leerValor(Y);
-  button = getKeyId(S);
-  //S = (alpha*Y)+((1-alpha)*S);
-  if (SerialBT.available()){ // Esto que hace ? 
-    if(Comandos_procesa(static_cast<char>(SerialBT.read())))
-        Serial.println("Comando procesado!");// SerialBT
-  }
-//Detectamos si Select_key fue pulsado o no. 
+
+// Codigo para lectura en consola.
+  // if (SerialBT.available()){ // Esto que hace ? 
+  //   if(Comandos_procesa(static_cast<char>(SerialBT.read())))
+  //       Serial.println("Comando procesado!");// SerialBT
+  // }
+
+Y = (float)analogRead(sensorPin)/10;
+mean = readValue(Y);
+trueValue(mean);
+
 //Pantalla Principal permitira ver los detalles del menu
 if(level_menu == 0 ){
   lcd.setCursor(0,0);
@@ -383,13 +375,13 @@ if(level_menu == 3){
     if(contador == 0){ // Muestra Frecuencia Actual
     //Hacer algo
       lcd.clear();
-      do{
-        lcd.setCursor(0,0);
-        lcd.print("Frec. Actual:");
-        lcd.setCursor(0,1);
-        lcd.print(frec);
-        lcd.print(" Ghz");
-      }while(getKeyId((int)S) != SELECT_KEY);
+      // do{
+      //   lcd.setCursor(0,0);
+      //   lcd.print("Frec. Actual:");
+      //   lcd.setCursor(0,1);
+      //   lcd.print(frec);
+      //   lcd.print(" Ghz");
+      // }while(getKeyId((int)S) != SELECT_KEY);
       
       contador = 0;
       
@@ -398,14 +390,14 @@ if(level_menu == 3){
     if (contador == 1){ // Se modifica la Frecuencia y se la establece.
       // Hacer algo
       lcd.clear();
-      do{
-        fn_variacion_frec();
-        lcd.setCursor(0,0);
-        lcd.print("Frecuencia:");
-        lcd.setCursor(0,1);
-        lcd.print(frec);
-        lcd.print(" Ghz");
-      }while(getKeyId((int)S) != SELECT_KEY);       
+      // do{
+      //   fn_variacion_frec();
+      //   lcd.setCursor(0,0);
+      //   lcd.print("Frecuencia:");
+      //   lcd.setCursor(0,1);
+      //   lcd.print(frec);
+      //   lcd.print(" Ghz");
+      // }while(getKeyId((int)S) != SELECT_KEY);       
       
       contador = 1;
       modoTest = false;
@@ -453,6 +445,9 @@ if(level_menu == 4){
       select_button = false;
     } 
 }  
+
+
+delay(5);
 }
 // Funcion exclusiva para el sintetizador
 void configureSynth() {
@@ -485,57 +480,99 @@ void enviari2c(uint8_t valor){
   }
 }
 
-// Funciones para el Menu lcd
-int getKeyId(int Read){
+// Funciones para el Menu LCD
+/* uniqueValue: recibe 'value' y te devuelve un único valor si es que tiene varias 
+                coincidencias ademas llama a la funcion textBT y éste te imprime en
+                la consola de BT el valor/tecla presionada
+                RECORDAR QUE SOLO USAMOS 3 => select, left, rigth
+*/
+void uniqueValue(int value){
+  int currentKey = value;
+  if(currentKey != lastKey && currentKey != 0 ){
+    textBT(currentKey);
+    button = currentKey;
+  }
+  lastKey = currentKey;
+
+}
+// put function definitions here:
+int readValue(int valor){ // Promedio Movil.
+  static int valores[16]={0}; 
+  static int s = 0;
+  static int indice = 0;
+
+  s = s + valor - valores[indice];
+  valores[indice]= valor;
+  indice = (indice+1) % 16;
+// Parece estar OK
+  return (s/16);
+}
+/*
+valorVerdadero: Busca obtener un valor estable de la tecla presionada.
+                Al tener la Coincidencia llama a uniqueValue para devolver 
+                un único valor.
+
+*/
+void trueValue(int value){ 
   static int previo = 0;
   static int n = 0;
   int actual;
-  actual = getKeyId2(Read);
-  if ((actual == previo) && actual) n++;
-  else {n = 0; previo = actual;}
-  if (n==90){
-    SerialBT.println("DETECTADO!!");
-    SerialBT.println(previo);  //SEL 1 IZQ 2 DER 5
-    n = 0; 
-    if (previo == SELECT_KEY) select_button = true;
-    return previo;}
-  return 0;
-}
+  actual = getKeyId(value);
 
-
-int getKeyId2(int aRead){
-  
-
-  // SerialBT.print(aRead);
-  // SerialBT.print("\n");
-  
-  // Select : 1190-1150
-
-  if(aRead > 1190){return 0;}
-  if( aRead > 1100){ //1150
-  //if(aRead>1150){ //1150
-    //SerialBT.println("SELECT");
-    //SerialBT.println((int)S);
-    //select_button = true;
-    return SELECT_KEY;
+  if((actual == previo)){
+    n++;
   }
-  if(aRead > 980){    
-    //SerialBT.println("LEFT");
-    //SerialBT.println((int)S);
-    return LEFT_KEY;   /*Left*/}
-  if(aRead > 860){    
-    //SerialBT.println("DOWN");
-    //SerialBT.println((int)S);
-    return DOWN_KEY;    /*Down*/}
-  if(aRead > 550){    
-    //SerialBT.println("UP");
-    //SerialBT.println((int)S);
-    return UP_KEY;        /*Up*/}
-  if(aRead <30){    
-    //SerialBT.println("RIGHT");
-    //SerialBT.println((int)S);
-    return RIGHT_KEY;    /*Rigth*/}
-  //delay(10);
+  else{
+    n = 0;
+    previo = actual;
+  }
+  if(n==15){
+    uniqueValue(actual);
+    // textBT(actual);
+    n = 0;
+  }
+}
+/*textBT: En función al 'value' te devuelve un valor por consola de BT 
+*/
+void textBT(int value){
+  switch(value){
+    case NOTHING:
+      SerialBT.println("NADA");
+      break;
+    case SELECT_KEY:
+      SerialBT.println("SELECT_KEY");
+      select_button = true;
+      break;
+    case LEFT_KEY:
+      SerialBT.println("LEFT_KEY");
+      break;
+    case DOWN_KEY:
+      SerialBT.println("DOWN_KEY");
+      break;
+    case UP_KEY:
+    SerialBT.println("UP_KEY");
+      break;
+    case RIGHT_KEY:
+      SerialBT.println("RIGHT_KEY");
+      break;
+    default:
+      SerialBT.println("NADA");
+    break;   
+  }  
+}
+int getKeyId(int value){
+  if(value > 120){
+    return 0;}
+  if(value > 110){
+    return SELECT_KEY;} 
+  if(value >= 100) {
+    return LEFT_KEY;}
+  if(value > 80) {
+    return DOWN_KEY;}
+  if(value >= 53) {
+    return UP_KEY;}
+  if(value <30) { // modificar el valor esta en funcion al read
+    return RIGHT_KEY;}
   return 0;
 }
 
@@ -571,7 +608,7 @@ void fn_menu(int pos,String menus[],byte sizemenu){
 // Permite el desplazamiento sobre el menu actual en el que nos encontremos.
 bool fnSwitch(byte sizemenu){
   bool retorno = false;
-  int boton = getKeyId(S);
+  int boton = button;
   if (boton ==0) return 0;
   else{
   if(boton==LEFT_KEY || boton== RIGHT_KEY){
@@ -590,23 +627,24 @@ bool fnSwitch(byte sizemenu){
     }
     retorno = true;
   }
+  button = NOTHING;
   return retorno;}
 }
 // Produce la Variación de Frecuencia con lim sup e inf 
 void fn_variacion_frec(){
-  if(getKeyId((int)S) == RIGHT_KEY){
-    frec= frec + 0.01;
-    //(250);
-  }else if(getKeyId((int)S)== LEFT_KEY){
-    frec = frec - 0.01 ;
-    //delay(250);
-  }
-  if(frec > 11.8){
-    frec = 11.8;
-  }
-  if( frec < 10.6){
-    frec = 10.6;
-  }
+  // if(getKeyId((int)S) == RIGHT_KEY){
+  //   frec= frec + 0.01;
+  //   //(250);
+  // }else if(getKeyId((int)S)== LEFT_KEY){
+  //   frec = frec - 0.01 ;
+  //   //delay(250);
+  // }
+  // if(frec > 11.8){
+  //   frec = 11.8;
+  // }
+  // if( frec < 10.6){
+  //   frec = 10.6;
+  // }
 }
 
 /*
