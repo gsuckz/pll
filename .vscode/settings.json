@@ -1,0 +1,18 @@
+{
+    "files.associations": {
+        "comandos.h": "c",
+        "numeros.h": "c",
+        "buffer.h": "c",
+        "*.tcc": "cpp",
+        "cstdlib": "cpp",
+        "array": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp"
+    },
+    "editor.formatOnSave": true
+}
