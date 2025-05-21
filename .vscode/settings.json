@@ -12,7 +12,13 @@
         "unordered_set": "cpp",
         "vector": "cpp",
         "string_view": "cpp",
-        "initializer_list": "cpp"
+        "initializer_list": "cpp",
+        "stdbool.h": "c",
+        "stdint.h": "c",
+        "string.h": "c",
+        "sintetizador.h": "c",
+        "liquidcrystal.h": "c",
+        "print.h": "c"
     },
     "editor.formatOnSave": true
 }

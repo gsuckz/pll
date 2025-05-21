@@ -2,7 +2,8 @@
 #include <Arduino.h>
 #include <BluetoothSerial.h>
 #include <Wire.h>
-
+#include <ctype.h>
+#include <stdint.h>
 /* Macros */
 
 #define FREC_MIN 10600 // ver si se mantiene
@@ -15,11 +16,12 @@
 
 /* Variables públicas*/
 
-const String nombresTests[tipoTest_MAX] = {[CP_snk] = "CP snk", [CP_src] = "CP src", [CP_dis] = "CP dis"};
-boolean modoTest                        = false; // Leer para entender...
-enum TipoTest_e testActual              = CP_snk;
+static BluetoothSerial SerialBT;
+boolean modoTest           = false; // Leer para entender...
+enum TipoTest_e testActual = CP_snk;
 
 /* Variables privadas*/
+static int frecuencia;
 
 static struct {
     int codigo; // 4 bits
@@ -47,12 +49,9 @@ enum DIVISORES : int {
     DIV320
 };
 
-typedef enum i2cError { ENVIADO = 0, muyLargo, nackAddres, nackData, ERROR, timeout } i2cError;
-typedef enum modo { NORMAL, CP_SINK, CP_SOURCE, CP_DISABLE, COMPARADOR_FASE_TEST } modo;
-
-modo modoactual   = NORMAL;
-const int zarlink = 0b1100001; // Dirección I2C del Zarlink SP5769
-
+static modo modoactual                 = NORMAL;
+const int zarlink                      = 0b1100001; // Dirección I2C del Zarlink SP5769
+const char *nombresTests[tipoTest_MAX] = {[CP_snk] = "CP snk", [CP_src] = "CP src", [CP_dis] = "CP dis"};
 /* Declaración de funciones privadas */
 
 /* Implementación de Funciones privadas */
@@ -68,6 +67,8 @@ void SintetizadorInicializa(void)
     enviari2c(Wire.endTransmission());
     SerialBT.println("Sintetizador configurado - Indique Frecuencia");
 }
+
+
 
 void SintetizadorCambiaFrecuencia(int freq)
 {
@@ -133,7 +134,7 @@ void SintetizadorCambiaModo(int mode)
 int SintetizadorLeeModo()
 {
     uint8_t temp;
-    // Wire.beginTransmission(zarlink);
+    Wire.beginTransmission(zarlink);
     Wire.requestFrom(zarlink, 1);
     if (Wire.available()) {
         Wire.readBytes(&temp, 1);
@@ -172,4 +173,11 @@ void enviari2c(uint8_t valor)
         SerialBT.println("ERROR DE COMUNICACION!");
         break;
     }
+}
+
+/*
+Configura el Timer para el barrido de frecuecnias
+*/
+void configurarBarrido(uint8_t min, uint8_t max, uint8_t step){
+
 }
