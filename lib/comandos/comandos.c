@@ -13,7 +13,7 @@
 int fmin_barrido              = 10600; // Frecuencia minima del barrido en MHz
 int fmax_barrido              = 11800; // Frecuencia maxima del barridoen MHz
 int frecuencia_actual = 10600; // Frecuencia actual en MHz
-int tiempoPaso        = 1000;  // Variable para el tiempo de paso del timer (en uS)
+uint64_t tiempoPaso        = 1000;  // Variable para el tiempo de paso del timer (en uS)
 
 hw_timer_t *timer = NULL; // Timer para el I2C
 void IRAM_ATTR timerInterrupcion(); // Prototipo de la función de interrupción del timer
@@ -63,7 +63,7 @@ static const I2C *i2c;
 void Comandos_init(const UART *uart_)
 {
     uart  = uart_;
-    timer = timerBegin(0, 80, true);                       // Timer 0, divisor de reloj 80
+    timer = timerBegin(1, 160, true);                       // Timer 0, divisor de reloj 160, cuenta hacia arriba, cada ciclo del timer es 1 microsegundo
     timerAttachInterrupt(timer, &timerInterrupcion, true); // Adjuntar la función de manejo de interrupción
 }
 void comandos_i2c(const I2C *i2c_)
@@ -74,11 +74,11 @@ void comandos_i2c(const I2C *i2c_)
 
 void IRAM_ATTR timerInterrupcion()
 {
-    i2c->write_freq(frecuencia_actual);          // Enviar la frecuencia actual al I2C
+    //i2c->write_freq(frecuencia_actual);          // Enviar la frecuencia actual al I2C
     frecuencia_actual += PASO_MINIMO_FERCUENCIA; // Incrementar la frecuencia actual
     if (frecuencia_actual > fmax_barrido) {
         frecuencia_actual = fmin_barrido; // Reiniciar a la frecuencia minima si se supera la maxima
-        uart->write_string("Reiniciando barrido de frecuencias\n\r");
+        //uart->write_string("Reiniciando barrido de frecuencias\n\r");
         //Serial.println("Reiniciando barrido de frecuencias");
     }
 }
@@ -194,15 +194,11 @@ static void procesar_cmd(CMD *cmd)
             return;
         }
 
-        //timerAlarmDisable(timer); // Deshabilitar la alarma antes de configurarla
         fmin_barrido = cmd->parametro[1];
         fmax_barrido = cmd->parametro[2];
         tiempoPaso =
-            (cmd->parametro[0] * 1000) /
-            ((fmax_barrido - fmin_barrido) /
-             PASO_MINIMO_FERCUENCIA); // Convertir a microsegundos, divide el tiempo de barrido por el numero de pasos
-        //timerAlarmWrite(timer, tiempoPaso, true); // Interrupción cada 1 segundo
-        //timerAlarmEnable(timer);
+        (cmd->parametro[0] * 1000) /
+        ((fmax_barrido - fmin_barrido)/PASO_MINIMO_FERCUENCIA); // Convertir a microsegundos, divide el tiempo de barrido por el numero de pasos
         uart->write_string("Barrido iniciado\n\r");
         uart->write_string("Frecuencia minima: ");
         uart->write_numero(fmin_barrido);       
@@ -213,6 +209,9 @@ static void procesar_cmd(CMD *cmd)
         uart->write_string("Tiempo de barrido: ");
         uart->write_numero(cmd->parametro[0]);
         uart->write_string(" ms\n\r");
+        timerAlarmDisable(timer); // Deshabilitar la alarma antes de configurarla
+        timerAlarmWrite(timer, tiempoPaso, true); // Interrupción cada tiempoPaso microsegundos
+        timerAlarmEnable(timer);
         //Serial.println("Iniciando barrido de frecuencias");
         break;
     case STOP:
