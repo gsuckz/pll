@@ -13,6 +13,7 @@
 #define R_DIVr DIVISOR_REFERENCIA[DIV40].codigo
 #define STATUS_POR 0b10000000
 #define STATUS_PHASE_LOCK 0b01000000
+#define FRECUENCIA_PASO 1 // Paso de frecuencia en MHz
 
 /* Variables públicas*/
 
@@ -21,7 +22,9 @@ boolean modoTest           = false; // Leer para entender...
 enum TipoTest_e testActual = CP_snk;
 
 /* Variables privadas*/
-static int frecuencia;
+volatile int frecuencia;
+static int frecuenciaBarridoMin = FREC_MIN; // Frecuencia minima del barrido
+static int frecuenciaBarridoMax = FREC_MAX; // Frecuencia maxima del barrido 
 
 static struct {
     int codigo; // 4 bits
@@ -88,7 +91,9 @@ void SintetizadorCambiaFrecuencia(int freq)
     Wire.write(divH);
     Wire.write(divL);
     enviari2c(Wire.endTransmission());
-}
+} 
+
+
 void SintetizadorCambiaModo(int mode)
 {
     switch (mode) {
@@ -178,6 +183,47 @@ void enviari2c(uint8_t valor)
 /*
 Configura el Timer para el barrido de frecuecnias
 */
-void configurarBarrido(uint8_t min, uint8_t max, uint8_t step){
+void configurarBarrido(int min,int max,int step){
+    frecuenciaBarridoMax = max;
+    frecuenciaBarridoMin = min;
+    
+
+}
+
+
+
+void SintetizadorTick(void)
+{
+    // Aquí puedes implementar la lógica de actualización periódica del sintetizador
+    // Por ejemplo, podrías verificar el estado del sintetizador o actualizar la frecuencia
+    // según sea necesario.
+    switch(modoactual) {
+        case NORMAL:
+        // Lógica para el modo normal
+        break;  
+        case CP_SINK:
+        // Lógica para el modo CP_SINK      
+        break;
+        case CP_SOURCE:     
+        break;
+        case CP_DISABLE:
+        // Lógica para el modo CP_DISABLE
+        break;      
+        case COMPARADOR_FASE_TEST:
+        // Lógica para el modo COMPARADOR_FASE_TEST 
+        break;
+        case BARRER:    
+        // Lógica para el modo BARRER
+        frecuencia += FRECUENCIA_PASO; // Incrementa la frecuencia en el paso definido
+        if (frecuencia > frecuenciaBarridoMax) {
+            frecuencia = frecuenciaBarridoMin; // Reinicia la frecuencia al mínimo si supera el máximo
+        }       
+        int divisor = ((frecuencia * R_DIV + XTAL_F * 2) / (XTAL_F * 4)) & 0x7FFF; // redondea para arriba
+        byte divH = (divisor >> 8) & 0x7F;
+        byte divL = divisor & 0xFF;
+        
+        break;
+    }
+
 
 }

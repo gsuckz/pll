@@ -7,6 +7,7 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
+#include <stdint.h>
 typedef struct UART {
     void (*write_string)(const char *str);
     void (*write_numero)(int num);
@@ -19,6 +20,7 @@ typedef struct I2C {
     void (*write_freq)(int valor);
     int (*read_state)();
     void (*write_mode)(int mode);
+    void(*configurarBarrido)(int min,int max,int step);
 } I2C;
 
 void comandos_i2c(const I2C *i2c);

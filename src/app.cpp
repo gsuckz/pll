@@ -4,6 +4,8 @@
 #include <Wire.h>
 #include "comandos.h"
 #include "sintetizador.h"
+#include "driver/i2c.h"
+#include "ticker.h"
 
 #define botones 1
 
@@ -47,7 +49,8 @@ void setup()
         .write_string = UART_write_string, .write_numero = UART_write_numero, .write = UART_write};
     static const I2C i2c = {.write_freq = SintetizadorCambiaFrecuencia,
                             .read_state = SintetizadorLeeModo,
-                            .write_mode = SintetizadorCambiaModo};
+                            .write_mode = SintetizadorCambiaModo,
+                            .configurarBarrido = configurarBarrido};
     // Inicia la comunicación serial para depuración
     Serial.begin(9600);
     // Inicia la comunicación Bluetooth
@@ -76,4 +79,5 @@ void loop()
             
         } 
     }
+    SintetizadorTick();
 }
