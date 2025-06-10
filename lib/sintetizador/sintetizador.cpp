@@ -1,9 +1,11 @@
 #include "sintetizador.h"
+#include "driver/i2c.h"
 #include <Arduino.h>
 #include <BluetoothSerial.h>
 #include <Wire.h>
 #include <ctype.h>
 #include <stdint.h>
+
 /* Macros */
 
 #define FREC_MIN 10600 // ver si se mantiene
@@ -13,7 +15,7 @@
 #define R_DIVr DIVISOR_REFERENCIA[DIV40].codigo
 #define STATUS_POR 0b10000000
 #define STATUS_PHASE_LOCK 0b01000000
-#define FRECUENCIA_PASO 1 // Paso de frecuencia en MHz
+#define FRECUENCIA_PASO_MIN 1 // Paso de frecuencia en MHz
 
 /* Variables públicas*/
 
@@ -23,8 +25,11 @@ enum TipoTest_e testActual = CP_snk;
 
 /* Variables privadas*/
 volatile int frecuencia;
+volatile int pasoFrecuencia     = 1;
 static int frecuenciaBarridoMin = FREC_MIN; // Frecuencia minima del barrido
-static int frecuenciaBarridoMax = FREC_MAX; // Frecuencia maxima del barrido 
+static int frecuenciaBarridoMax = FREC_MAX; // Frecuencia maxima del barrido
+static int tiempoPasoFrecuencia = 100;      // Tiempo en ms entre pasos de frecuencia en modo barrido
+static bool barrer              = 0;
 
 static struct {
     int codigo; // 4 bits
@@ -71,11 +76,21 @@ void SintetizadorInicializa(void)
     SerialBT.println("Sintetizador configurado - Indique Frecuencia");
 }
 
-
+void SintetizadorFijaFrecuencia(void)
+{
+    int divisor = ((frecuencia * R_DIV + XTAL_F * 2) / (XTAL_F * 4)) & 0x7FFF; // redondea para arriba
+    byte divH   = (divisor >> 8) & 0x7F;
+    byte divL   = divisor & 0xFF;
+    Wire.beginTransmission(zarlink);
+    Wire.write(divH);
+    Wire.write(divL);
+    enviari2c(Wire.endTransmission());
+}
 
 void SintetizadorCambiaFrecuencia(int freq)
 {
-    frecuencia  = freq;
+    frecuencia = freq;
+    SintetizadorFijaFrecuencia();                                        // Envia la frecuencia al sintetizador
     int divisor = ((freq * R_DIV + XTAL_F * 2) / (XTAL_F * 4)) & 0x7FFF; // redondea para arriba
     if (modoactual == COMPARADOR_FASE_TEST) {
         SerialBT.println("Frecuencia");
@@ -85,14 +100,7 @@ void SintetizadorCambiaFrecuencia(int freq)
         SerialBT.println("Frecuencia segun divisor y ref");
         SerialBT.println((XTAL_F * divisor * 4 * R_DIV / 2) / R_DIV);
     }
-    byte divH = (divisor >> 8) & 0x7F;
-    byte divL = divisor & 0xFF;
-    Wire.beginTransmission(zarlink);
-    Wire.write(divH);
-    Wire.write(divL);
-    enviari2c(Wire.endTransmission());
-} 
-
+}
 
 void SintetizadorCambiaModo(int mode)
 {
@@ -136,7 +144,7 @@ void SintetizadorCambiaModo(int mode)
     Wire.write(0);
     enviari2c(Wire.endTransmission());
 }
-int SintetizadorLeeModo()
+int SintetizadorLeeEstado()
 {
     uint8_t temp;
     Wire.beginTransmission(zarlink);
@@ -183,47 +191,50 @@ void enviari2c(uint8_t valor)
 /*
 Configura el Timer para el barrido de frecuecnias
 */
-void configurarBarrido(int min,int max,int step){
+void configurarBarrido(int min, int max, int duracion)
+{
     frecuenciaBarridoMax = max;
     frecuenciaBarridoMin = min;
-    
-
+    pasoFrecuencia       = ((frecuenciaBarridoMax - frecuenciaBarridoMin) / duracion); // Calcula el paso de frecuencia
+    barrer               = true; // Activa el barrido de frecuencias
 }
 
-
+void paraBarrido(void)
+{
+    barrer = false;               // Desactiva el barrido de frecuencias
+    SintetizadorFijaFrecuencia(); // Asegura que la frecuencia actual se envíe al sintetizador
+    SerialBT.println("Frecuencia barrido detenida, frecuencia actual fijada: ");
+    SerialBT.println(frecuencia); // Muestra la frecuencia actual
+}
 
 void SintetizadorTick(void)
 {
     // Aquí puedes implementar la lógica de actualización periódica del sintetizador
     // Por ejemplo, podrías verificar el estado del sintetizador o actualizar la frecuencia
     // según sea necesario.
-    switch(modoactual) {
-        case NORMAL:
+    switch (modoactual) {
+    case NORMAL:
         // Lógica para el modo normal
-        break;  
-        case CP_SINK:
-        // Lógica para el modo CP_SINK      
+        if (barrer) {
+            frecuencia += pasoFrecuencia; // Incrementa la frecuencia en el paso definido
+            if (frecuencia > frecuenciaBarridoMax) {
+                frecuencia = frecuenciaBarridoMin; // Reinicia la frecuencia al mínimo si supera el máximo
+                SerialBT.println("Reiniciando barrido de frecuencias");
+            }
+        }
+        // Enviar la nueva frecuencia al sintetizador I2C
+        SintetizadorFijaFrecuencia(); // Asegura que la frecuencia actual se envíe al sintetizador
         break;
-        case CP_SOURCE:     
+    case CP_SINK:
+        // Lógica para el modo CP_SINK
         break;
-        case CP_DISABLE:
+    case CP_SOURCE:
+        break;
+    case CP_DISABLE:
         // Lógica para el modo CP_DISABLE
-        break;      
-        case COMPARADOR_FASE_TEST:
-        // Lógica para el modo COMPARADOR_FASE_TEST 
         break;
-        case BARRER:    
-        // Lógica para el modo BARRER
-        frecuencia += FRECUENCIA_PASO; // Incrementa la frecuencia en el paso definido
-        if (frecuencia > frecuenciaBarridoMax) {
-            frecuencia = frecuenciaBarridoMin; // Reinicia la frecuencia al mínimo si supera el máximo
-        }       
-        int divisor = ((frecuencia * R_DIV + XTAL_F * 2) / (XTAL_F * 4)) & 0x7FFF; // redondea para arriba
-        byte divH = (divisor >> 8) & 0x7F;
-        byte divL = divisor & 0xFF;
-        
+    case COMPARADOR_FASE_TEST:
+        // Lógica para el modo COMPARADOR_FASE_TEST
         break;
     }
-
-
 }

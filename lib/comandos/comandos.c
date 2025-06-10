@@ -148,12 +148,8 @@ static void procesar_cmd(CMD *cmd)
     switch (cmd->cmd) {
     case BARRER:
     
-        if (timer == NULL) {
-            uart->write_string("Timer no inicializado\n\r");
-            return;
-        }
         if (cmd->parametro[0] < 1 || cmd->parametro[0] > 10000) {
-            uart->write_string("Tiempo de barrido invalido, ingrese un valor entre 1 y 10000 ms\n\r");
+            uart->write_string("Tiempo de barrido invalido,tiempo mìnimo 100 ms\n\r");
             return;
         }
         if (cmd->parametro[1] < 10600 || cmd->parametro[1] > 11800 || cmd->parametro[2] < 10600 ||
@@ -166,16 +162,11 @@ static void procesar_cmd(CMD *cmd)
             uart->write_string(" MHz\n\r");
             return;
         }
-        if (cmd->parametro[1] >= cmd->parametro[2]) {
-            uart->write_string("Frecuencia minima debe ser menor que la maxima\n\r");
+        if (cmd->parametro[1] >= (cmd->parametro[2] +100)) { // +100 para que la minima sea menor que la maxima
+            uart->write_string("Frecuencia minima debe ser menor que la maxima al menos en 100Mhz\n\r");
             return;
         }
-        if ((cmd->parametro[2] - cmd->parametro[1]) < RANGO_MINIMO)
-        { // RANGO_MINIMO es el rango minimo de frecuencias permitido
-            uart->write_string("Rango de frecuencias demasiado pequeño\n\r");
-            return;
-        }
-        configurarBarrido(cmd->parametro[1], cmd->parametro[2], cmd->parametro[0]);
+        i2c->configurarBarrido(cmd->parametro[1], cmd->parametro[2], cmd->parametro[0]);
         uart->write_string("Barrido iniciado\n\r");
         uart->write_string("Frecuencia minima: ");
         uart->write_numero(cmd->parametro[1]);       
@@ -189,6 +180,7 @@ static void procesar_cmd(CMD *cmd)
         break;
     case STOP:
         uart->write_string("Barrido detenido\n\r");
+        i2c->write_mode(0); // Cambia al modo normal
         //Serial.println("Barrido Detenido");
         break;
     case FREC:
@@ -199,11 +191,13 @@ static void procesar_cmd(CMD *cmd)
         } else {
             uart->write_string("Frecuencia invalida, ingrese un valor entero entre 10600-11800 MHz\n\r");
         }
+        i2c->write_mode(0); // Cambia al modo normal
         break;
     case FRECq:
     case FRECUENCIAq: // FALLTHRU
         uart->write_string("Frecuencia fijada en: ");
-        uart->write_numero(frecuencia_actual);
+        //uart->write_numero(i2c->());
+        uart->write_string(" MHz\n\r");
         uart->write('\n');
         uart->write('\r');
         break;
