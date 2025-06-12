@@ -31,10 +31,12 @@ void SintetizadorCambiaModo(int mode);
 
 int SintetizadorLeeEstado();
 
-void SintetizadorTick(void);
+int SintetizadorTick(void);
 
 void enviari2c(uint8_t valor); ///????????????
 
 void configurarBarrido(int min, int max, int duracion);
+
+void paraBarrido(void);
 
 #endif /*SINTETIZADOR_H*/

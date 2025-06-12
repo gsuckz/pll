@@ -127,9 +127,9 @@ static bool esTerminador(char c)
 // Numero de pasos = (fmax_barrido - fmin_barrido) / paso minimo de frecuencia
 // Tiempo de paso = (fmax_barrido - fmin_barrido) / paso minimo de frecuencia
 
-static void procesar_cmd(CMD *cmd)
-{
-    switch (cmd->code) {
+static void procesar_cmd(CMD *cmd){
+    // Comprueba si el comando es valido
+switch (cmd->code) {
     case SyntaxError:
         uart->write_string("Error de Syntaxis\r\n");
         return;
@@ -145,7 +145,8 @@ static void procesar_cmd(CMD *cmd)
     default:
         break;
     }
-    switch (cmd->cmd) {
+// Ejecuta el comando seleccionado
+switch (cmd->cmd) {
     case BARRER:
     
         if (cmd->parametro[0] < 1 || cmd->parametro[0] > 10000) {
@@ -162,36 +163,44 @@ static void procesar_cmd(CMD *cmd)
             uart->write_string(" MHz\n\r");
             return;
         }
-        if (cmd->parametro[1] >= (cmd->parametro[2] +100)) { // +100 para que la minima sea menor que la maxima
+        if (cmd->parametro[1] >= (cmd->parametro[2] +100)) { // +100 para que la minima sea menor que la maxima en 100
             uart->write_string("Frecuencia minima debe ser menor que la maxima al menos en 100Mhz\n\r");
             return;
         }
         i2c->configurarBarrido(cmd->parametro[1], cmd->parametro[2], cmd->parametro[0]);
-        uart->write_string("Barrido iniciado\n\r");
-        uart->write_string("Frecuencia minima: ");
-        uart->write_numero(cmd->parametro[1]);       
-        uart->write_string(" MHz\n\r");
-        uart->write_string("Frecuencia maxima: ");  
-        uart->write_numero(cmd->parametro[2]);
-        uart->write_string(" MHz\n\r"); 
-        uart->write_string("Tiempo de barrido: ");
-        uart->write_numero(cmd->parametro[0]);
-        uart->write_string(" ms\n\r");
+        //uart->write_string("Barrido iniciado\n\r");
+        //uart->write_string("Frecuencia minima: ");
+        //uart->write_numero(cmd->parametro[1]);       
+        //uart->write_string(" MHz\n\r");
+        //uart->write_string("Frecuencia maxima: ");  
+        //uart->write_numero(cmd->parametro[2]);
+        //uart->write_string(" MHz\n\r"); 
+        //uart->write_string("Tiempo de barrido: ");
+        //uart->write_numero(cmd->parametro[0]);
+        //uart->write_string(" ms\n\r");
         break;
     case STOP:
         uart->write_string("Barrido detenido\n\r");
-        i2c->write_mode(0); // Cambia al modo normal
+        i2c->paraBarrido();
         //Serial.println("Barrido Detenido");
         break;
     case FREC:
     case FRECUENCIA:                                                    // FALLTHRU
+        //i2c->write_mode(0); // Cambia al modo normal
+        uart->write_string("Detecta comando de Frecuencia\n\r");
         if (cmd->parametro[0] <= 11800 && cmd->parametro[0] >= 10600) { //&& (cmd->code = CodigoValido)
             // set_servo_angle(cmd->parametro[0]); Escribir en I2C valor del divisor de frecuencia
+            uart->write_string("Entra a ajustar\n\r");
             i2c->write_freq(cmd->parametro[0]);
+            uart->write_string("Volvio\n\r");
         } else {
             uart->write_string("Frecuencia invalida, ingrese un valor entero entre 10600-11800 MHz\n\r");
         }
-        i2c->write_mode(0); // Cambia al modo normal
+        uart->write_string("Esta por leer el estado\n\r");
+        //i2c->read_state();
+        uart->write_string("Frecuencia fijada en: ");   
+        uart->write_numero(cmd->parametro[0]); // Escribe la frecuencia fijada
+        uart->write_string(" MHz\n\r");
         break;
     case FRECq:
     case FRECUENCIAq: // FALLTHRU
@@ -229,12 +238,12 @@ static void procesar_cmd(CMD *cmd)
 }
 bool Comandos_procesa(char c)
 {
-    static CMD cmd[1];
-    static Estado estado   = INICIO;
-    static Palabra palabra = {.max = N_COMANDOS - 1, .min = 0, .n = 0};
-    static Numero numero[9] = {0}; // Arreglo de numeros para los parametros
-    static int parametroRecibido = 0;
-    bool encontrado                  = 0;
+static CMD cmd[1];
+static Estado estado   = INICIO;
+static Palabra palabra = {.max = N_COMANDOS - 1, .min = 0, .n = 0};
+static Numero numero[9] = {0}; // Arreglo de numeros para los parametros
+static int parametroRecibido = 0;
+bool encontrado                  = 0;
     // uart->write('\n');
     if (esTerminador(c)) {
         /// Comprueba si detectó un parametro valido///

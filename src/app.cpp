@@ -49,8 +49,8 @@ void vTareaPeriodica(void *pvParameters)
 {
     while (1) {
         // SerialBT.println("Tarea periódica ");
-        SintetizadorTick();
-        vTaskDelay(10 / portTICK_PERIOD_MS); // Espera 1 segundo antes de volver a ejecutar
+        
+        vTaskDelay(SintetizadorTick() / portTICK_PERIOD_MS); // Espera el tiempoPaso antes de volver a ejecutar
     }
 }
 
@@ -62,7 +62,8 @@ void setup()
     static const I2C i2c = {.write_freq        = SintetizadorCambiaFrecuencia,
                             .read_state        = SintetizadorLeeEstado,
                             .write_mode        = SintetizadorCambiaModo,
-                            .configurarBarrido = configurarBarrido};
+                            .configurarBarrido = configurarBarrido,
+                            .paraBarrido = paraBarrido};
     // Inicia la comunicación serial para depuración
     Serial.begin(9600);
     // Inicia la comunicación Bluetooth
