@@ -8,7 +8,7 @@
 
 /* Definiciones de tipos públicos */
 typedef enum i2cError { ENVIADO = 0, muyLargo, nackAddres, nackData, ERROR, timeout } i2cError;
-typedef enum modo { NORMAL, CP_SINK, CP_SOURCE, CP_DISABLE, COMPARADOR_FASE_TEST} modo;
+typedef enum modo { NORMAL, CP_SINK, CP_SOURCE, CP_DISABLE, COMPARADOR_FASE_TEST } modo;
 typedef enum TipoTest_e { CP_snk, CP_src, CP_dis, tipoTest_MAX } TipoTest;
 
 /* Variables públicas*/
@@ -29,7 +29,7 @@ void SintetizadorCambiaFrecuencia(int freq);
 
 void SintetizadorCambiaModo(int mode);
 
-int SintetizadorLeeEstado();
+int estadoDelSintetizador();
 
 int SintetizadorTick(void);
 

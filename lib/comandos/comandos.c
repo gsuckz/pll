@@ -147,8 +147,7 @@ switch (cmd->code) {
     }
 // Ejecuta el comando seleccionado
 switch (cmd->cmd) {
-    case BARRER:
-    
+    case BARRER:    
         if (cmd->parametro[0] < 1 || cmd->parametro[0] > 10000) {
             uart->write_string("Tiempo de barrido invalido,tiempo mìnimo 100 ms\n\r");
             return;
@@ -168,21 +167,10 @@ switch (cmd->cmd) {
             return;
         }
         i2c->configurarBarrido(cmd->parametro[1], cmd->parametro[2], cmd->parametro[0]);
-        //uart->write_string("Barrido iniciado\n\r");
-        //uart->write_string("Frecuencia minima: ");
-        //uart->write_numero(cmd->parametro[1]);       
-        //uart->write_string(" MHz\n\r");
-        //uart->write_string("Frecuencia maxima: ");  
-        //uart->write_numero(cmd->parametro[2]);
-        //uart->write_string(" MHz\n\r"); 
-        //uart->write_string("Tiempo de barrido: ");
-        //uart->write_numero(cmd->parametro[0]);
-        //uart->write_string(" ms\n\r");
         break;
     case STOP:
-        uart->write_string("Barrido detenido\n\r");
+        //uart->write_string("Barrido detenido\n\r");
         i2c->paraBarrido();
-        //Serial.println("Barrido Detenido");
         break;
     case FREC:
     case FRECUENCIA:                                                    // FALLTHRU
@@ -205,7 +193,7 @@ switch (cmd->cmd) {
     case FRECq:
     case FRECUENCIAq: // FALLTHRU
         uart->write_string("Frecuencia fijada en: ");
-        //uart->write_numero(i2c->());
+        //Obtenemos la frecuencia actual del sintetizador
         uart->write_string(" MHz\n\r");
         uart->write('\n');
         uart->write('\r');

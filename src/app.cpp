@@ -7,7 +7,6 @@
 #include <LiquidCrystal.h>
 #include <Wire.h>
 
-
 #define botones 1
 
 /* modoTest
@@ -49,7 +48,7 @@ void vTareaPeriodica(void *pvParameters)
 {
     while (1) {
         // SerialBT.println("Tarea periódica ");
-        
+
         vTaskDelay(SintetizadorTick() / portTICK_PERIOD_MS); // Espera el tiempoPaso antes de volver a ejecutar
     }
 }
@@ -60,10 +59,10 @@ void setup()
     static const UART uart = {
         .write_string = UART_write_string, .write_numero = UART_write_numero, .write = UART_write};
     static const I2C i2c = {.write_freq        = SintetizadorCambiaFrecuencia,
-                            .read_state        = SintetizadorLeeEstado,
+                            .read_state        = estadoDelSintetizador,
                             .write_mode        = SintetizadorCambiaModo,
                             .configurarBarrido = configurarBarrido,
-                            .paraBarrido = paraBarrido};
+                            .paraBarrido       = paraBarrido};
     // Inicia la comunicación serial para depuración
     Serial.begin(9600);
     // Inicia la comunicación Bluetooth
