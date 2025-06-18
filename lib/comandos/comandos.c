@@ -174,21 +174,17 @@ switch (cmd->cmd) {
         break;
     case FREC:
     case FRECUENCIA:                                                    // FALLTHRU
-        //i2c->write_mode(0); // Cambia al modo normal
-        uart->write_string("Detecta comando de Frecuencia\n\r");
+        //uart->write_string("Detecta comando de Frecuencia\n\r");
         if (cmd->parametro[0] <= 11800 && cmd->parametro[0] >= 10600) { //&& (cmd->code = CodigoValido)
-            // set_servo_angle(cmd->parametro[0]); Escribir en I2C valor del divisor de frecuencia
-            uart->write_string("Entra a ajustar\n\r");
             i2c->write_freq(cmd->parametro[0]);
-            uart->write_string("Volvio\n\r");
+            uart->write_string("Frecuencia fijada en: ");   
+            uart->write_numero(cmd->parametro[0]); // Escribe la frecuencia fijada
+            uart->write_string(" MHz\n");
         } else {
-            uart->write_string("Frecuencia invalida, ingrese un valor entero entre 10600-11800 MHz\n\r");
+            uart->write_string("Frecuencia invalida, ingrese un valor entero entre 10600-11800 MHz\n");
         }
-        uart->write_string("Esta por leer el estado\n\r");
-        //i2c->read_state();
-        uart->write_string("Frecuencia fijada en: ");   
-        uart->write_numero(cmd->parametro[0]); // Escribe la frecuencia fijada
-        uart->write_string(" MHz\n\r");
+
+
         break;
     case FRECq:
     case FRECUENCIAq: // FALLTHRU

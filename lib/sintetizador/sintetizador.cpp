@@ -16,10 +16,11 @@
 #define STATUS_POR 0b10000000
 #define STATUS_PHASE_LOCK 0b01000000
 #define FRECUENCIA_PASO_MIN 1 // Paso de frecuencia en MHz
-#define TAMAÑO_BUFFER_BARRIDO 200
+#define TAMANO_BUFFER_BARRIDO 200
 #define NUMERO_PASOS_TOTAL 1201 // Número total de pasos en el barrido de frecuencias (De acuerdo al divisor del PLL)
 
 /* Variables públicas*/
+enum estadoPLL : int { ENCLAVADO, NO_ENCLAVADO, ERROR_ALIMENTACION };
 
 static BluetoothSerial SerialBT;
 boolean modoTest           = false; // Leer para entender...
@@ -36,18 +37,18 @@ static bool leerEstado          = false;        // Indica si se debe leer el est
 // static int tiempoPasoFrecuencia = 100;      // Tiempo en ms entre pasos de frecuencia en modo barrido
 static bool barrer                         = 0;
 static bool actualizarFrecuencia           = 1;
-static byte bufferH[TAMAÑO_BUFFER_BARRIDO] = {0}; // Buffer para almacenar los datos del barrido
-static byte bufferL[TAMAÑO_BUFFER_BARRIDO] = {0}; // Buffer para almacenar los datos del barrido
+static byte bufferH[TAMANO_BUFFER_BARRIDO] = {0}; // Buffer para almacenar los datos del barrido
+static byte bufferL[TAMANO_BUFFER_BARRIDO] = {0}; // Buffer para almacenar los datos del barrido
 static int numeroPasos;
+static int pasoActual = 0; // Variable estática para llevar el control del paso actual del barrido
 static struct {
     int codigo; // 4 bits
     int ratio;
 } constexpr DIVISOR_REFERENCIA[] = {
     {0b0000, 2},  {0b0001, 4}, {0b0010, 8},  {0b0011, 16}, {0b0100, 32}, {0b0101, 64}, {0b0110, 128}, {0b0111, 256},
     {0b1000, 24}, {0b1001, 5}, {0b1010, 10}, {0b1011, 20}, {0b1100, 40}, {0b1101, 80}, {0b1110, 160}, {0b1111, 320}};
-
-enum estadoPLL : int { ENCLAVADO, NO_ENCLAVADO, ERROR_ALIMENTACION };
-
+    
+    
 enum DIVISORES : int {
     DIV2,
     DIV4,
@@ -76,21 +77,22 @@ const char *nombresTests[tipoTest_MAX] = {[CP_snk] = "CP snk", [CP_src] = "CP sr
 
 void configurarSintetizadorI2C() {
     static bool i2c_configurado = false;
-    if (i2c_configurado) return; // Evita reconfiguración
-    // Configuración del I2C de ESP-IDF
-    i2c_config_t conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = SDA_PIN,
-        .scl_io_num = SCL_PIN,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = 100000 // 100 kHz
-    };
-    i2c_param_config(I2C_NUM_0, &conf);
-    i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
-    // Asegura que Wire también opere a 100kHz
+    if (i2c_configurado) return;
+
+    //i2c_config_t conf;
+    //conf.mode = I2C_MODE_MASTER;
+    //conf.sda_io_num = SDA_PIN;
+    //conf.scl_io_num = SCL_PIN;
+    //conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+    //conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+    //conf.master.clk_speed = 100000; // 100 kHz
+//
+    //i2c_param_config(I2C_NUM_0, &conf);
+    //i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
+
     Wire.begin(SDA_PIN, SCL_PIN);
-    Wire.setClock(100000);
+    //Wire.setClock(100000);
+
     i2c_configurado = true;
 }
 
@@ -117,6 +119,7 @@ void SintetizadorFijaFrecuencia(void)
     Wire.write(divH);
     Wire.write(divL);
     enviari2c(Wire.endTransmission());
+    SerialBT.print("Frecuencia ajustada ");
 }
 
 void SintetizadorCambiaFrecuencia(int freq)
@@ -195,16 +198,16 @@ int estadoDelSintetizador()
 {
     switch (estadoActual) {
     case ENCLAVADO:
-        // SerialBT.println("Estado: Enclavado");
+        SerialBT.println("Estado: Enclavado!");
         break;
     case NO_ENCLAVADO:
-        // SerialBT.println("Estado: No Enclavado");
+        SerialBT.println("Estado: No Enclavado");
         break;
     case ERROR_ALIMENTACION:
-        // SerialBT.println("Estado: Error de Alimentación");
+        SerialBT.println("Estado: Error de Alimentación");
         break;
     default:
-        // SerialBT.println("Estado: Desconocido");
+        SerialBT.println("Estado: Desconocido");
         break;
     }
     return estadoActual; // Retorna el estado actual del sintetizador
@@ -251,7 +254,7 @@ void configurarBarrido(int min, int max, int duracion)
                          : numeroPasosT; // Elige el mayor número de pasos entre frecuencia y tiempo
     pasoFrecuencia = ((frecuenciaBarridoMax - frecuenciaBarridoMin) / numeroPasos); // Calcula el paso de frecuencia
     pasoTiempo     = duracion / numeroPasos;                                        // Calcula el tiempo de paso en ms
-    if (numeroPasos > TAMAÑO_BUFFER_BARRIDO / 2) {
+    if (numeroPasos > TAMANO_BUFFER_BARRIDO / 2) {
         SerialBT.println("ERROR: Numero de pasos excede el tamaño del buffer de barrido");
         return; // Verifica que el número de pasos no exceda el tamaño del buffer
     }
@@ -291,23 +294,27 @@ void paraBarrido(void)
 
 
 
-static int pasoActual = 0; // Variable estática para llevar el control del paso actual del barrido
 
 
 void enviarPasoI2C() {
-    uint8_t byteH = bufferH[pasoActual];
-    uint8_t byteL = bufferL[pasoActual];
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    if (!cmd) return;
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, (zarlink << 1) | I2C_MASTER_WRITE, false); // sin ACK
-    i2c_master_write_byte(cmd, byteH, false);
-    i2c_master_write_byte(cmd, byteL, false);
-    i2c_master_stop(cmd);
-    // Lanza la transmisión SIN esperar
-    i2c_master_cmd_begin(I2C_NUM_0, cmd, 0); // timeout 0 → no bloquea
-    i2c_cmd_link_delete(cmd);
-    // Avanza el paso (cíclico)
+    //uint8_t byteH = bufferH[pasoActual];
+    //uint8_t byteL = bufferL[pasoActual];
+    //i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    //if (!cmd) return;
+    //i2c_master_start(cmd);
+    //i2c_master_write_byte(cmd, (zarlink << 1) | I2C_MASTER_WRITE, false); // sin ACK
+    //i2c_master_write_byte(cmd, byteH, false);
+    //i2c_master_write_byte(cmd, byteL, false);
+    //i2c_master_stop(cmd);
+    //// Lanza la transmisión SIN esperar
+    //i2c_master_cmd_begin(I2C_NUM_0, cmd, 0); // timeout 0 → no bloquea
+    //i2c_cmd_link_delete(cmd);
+    //// Avanza el paso (cíclico)
+
+    Wire.beginTransmission(zarlink);
+    Wire.write(bufferH[pasoActual]);
+    Wire.write(bufferL[pasoActual]);
+    enviari2c(Wire.endTransmission());
 
 }
 
