@@ -27,12 +27,12 @@ boolean modoTest           = false; // Leer para entender...
 enum TipoTest_e testActual = CP_snk;
 
 /* Variables privadas*/
-volatile int frecuencia         = 10600; // Frecuencia actual del sintetizador en MHz
-volatile int pasoFrecuencia     = 1;
-volatile int pasoTiempo         = 1;            // Duración cada paso del barrido en ms
+static int frecuencia         = 10600; // Frecuencia actual del sintetizador en MHz
+static int pasoFrecuencia     = 1;
+static int pasoTiempo         = 10;            // Duración cada paso del barrido en ms
 static int frecuenciaBarridoMin = FREC_MIN;     // Frecuencia minima del barrido
 static int frecuenciaBarridoMax = FREC_MAX;     // Frecuencia maxima del barrido
-static estadoPLL estadoActual   = NO_ENCLAVADO; // Estado del PLL
+static estadoPLL estadoActual   = ERROR_ALIMENTACION; // Estado del PLL
 static bool leerEstado          = false;        // Indica si se debe leer el estado del sintetizador
 // static int tiempoPasoFrecuencia = 100;      // Tiempo en ms entre pasos de frecuencia en modo barrido
 static bool barrer                         = 0;
@@ -90,7 +90,7 @@ void configurarSintetizadorI2C() {
     //i2c_param_config(I2C_NUM_0, &conf);
     //i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
 
-    Wire.begin(SDA_PIN, SCL_PIN);
+    //Wire.begin(SDA_PIN, SCL_PIN);
     //Wire.setClock(100000);
 
     i2c_configurado = true;
@@ -119,7 +119,15 @@ void SintetizadorFijaFrecuencia(void)
     Wire.write(divH);
     Wire.write(divL);
     enviari2c(Wire.endTransmission());
-    SerialBT.print("Frecuencia ajustada ");
+    SerialBT.print("Frecuencia ajustada en:");
+    SerialBT.print(frecuencia); // Muestra la frecuencia ajustada
+    SerialBT.print(" MHz, Divisor: ");  
+    SerialBT.print(divisor); // Muestra el divisor calculado    
+    SerialBT.print(" (H: ");    
+    SerialBT.print(divH); // Muestra el byte alto del divisor   
+    SerialBT.print(", L: ");    
+    SerialBT.print(divL); // Muestra el byte bajo del divisor
+    SerialBT.println(")\n");
 }
 
 void SintetizadorCambiaFrecuencia(int freq)
@@ -218,7 +226,7 @@ void  enviari2c(uint8_t valor)
     i2cError error = (i2cError)valor;
     switch (error) {
     case ENVIADO:
-        // SerialBT.println("OK");
+        SerialBT.println("OK");
         //  break;case muyLargo:
         //    SerialBT.println("MENSAJE DEMASIADO LARGO");
         //  break;case nackAddres:
@@ -339,17 +347,21 @@ int SintetizadorTick(void)
     // Aquí puedes implementar la lógica de actualización periódica del sintetizador
     // Por ejemplo, podrías verificar el estado del sintetizador o actualizar la frecuencia
     // según sea necesario.
+    SerialBT.println("SintetizadorTick llamado");
     switch (modoactual) {
     case NORMAL:
         // Lógica para el modo normal
         if (barrer) {
             SintetizadorTickBarrido(); // Llama a la función de barrido si está activo
+            SerialBT.print("Barrido activo");
         }else{
             if(actualizarFrecuencia){
                 pasoTiempo = 100; // Establece el tiempo de paso en ms para el modo normal
                 SintetizadorFijaFrecuencia(); // Envia la frecuencia al sintetizador
                 actualizarFrecuencia = false; // Desactiva la actualización de frecuencia
             }
+            SerialBT.print("XD");
+            
             SintetizadorActualizaEstado(); // Actualiza el estado del sintetizador
         }
         // Enviar la nueva frecuencia al sintetizador I2C

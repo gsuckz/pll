@@ -46,10 +46,21 @@ static void UART_write(int c)
 
 void vTareaPeriodica(void *pvParameters)
 {
+    int paso    = 0;
+    bool estado = false;
+    digitalWrite(LED_BUILTIN, estado);
     while (1) {
         // SerialBT.println("Tarea periódica ");
-
-        vTaskDelay(SintetizadorTick() / portTICK_PERIOD_MS); // Espera el tiempoPaso antes de volver a ejecutar
+        if (paso >= 5) {
+            estado = !estado;
+            paso   = 0;
+            digitalWrite(LED_BUILTIN, estado);
+        } else {
+            ++paso;
+        }
+        SerialBT.println("Tarea periódica ejecutada");
+        const int tiempo_ms = SintetizadorTick();
+        vTaskDelay(tiempo_ms / portTICK_PERIOD_MS); // Espera el tiempoPaso antes de volver a ejecutar
     }
 }
 
@@ -78,15 +89,11 @@ void setup()
     // modoactual = NORMAL;
     // lcd.begin(16, 2);
     // lcd.createChar(0, flecha);
-
-    xTaskCreatePinnedToCore(vTareaPeriodica,       // Función
-                            "TareaPeriodica",      // Nombre
-                            2048,                  // Stack size
-                            NULL,                  // Parámetro
-                            1,                     // Prioridad
-                            &tareaPeriodicaHandle, // Handle
-                            1                      // Core (0 o 1)
-    );
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, HIGH);
+    if (xTaskCreate(vTareaPeriodica, "TareaPeriodica", 2048, NULL, 1, &tareaPeriodicaHandle) != pdPASS) {
+        // digitalWrite(LED_BUILTIN, LOW);
+    }
 }
 char caracter_recibido;
 void loop()
