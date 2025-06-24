@@ -22,7 +22,6 @@ modo de Test:
 BluetoothSerial SerialBT;
 
 // ======= Declaración de Funciones ===========
-
 void SintetizadorInicializa();
 void enviari2c(uint8_t);
 // ======= Declaración de Funciones para detección de Teclas ===========
@@ -40,27 +39,49 @@ static void UART_write(int c)
     SerialBT.write(static_cast<uint8_t>(c));
 }
 }
-// Ultimas variables asociadas
-
-// modo modoactual;
 
 void vTareaPeriodica(void *pvParameters)
 {
     int paso    = 0;
     bool estado = false;
-    digitalWrite(LED_BUILTIN, estado);
     while (1) {
-        // SerialBT.println("Tarea periódica ");
-        if (paso >= 5) {
+        digitalWrite(2, HIGH);
+        if (paso >= 5) { // Cambia el estado del LED cada 500 ms
             estado = !estado;
             paso   = 0;
-            digitalWrite(LED_BUILTIN, estado);
         } else {
             ++paso;
         }
-        SerialBT.println("Tarea periódica ejecutada");
-        const int tiempo_ms = SintetizadorTick();
-        vTaskDelay(tiempo_ms / portTICK_PERIOD_MS); // Espera el tiempoPaso antes de volver a ejecutar
+        // SerialBT.println("Tarea periódica ejecutada");
+        // const int tiempo_ms = SintetizadorTick();
+        const int tiempo_ms = 100;
+        
+        SintetizadorTick(); // Llama a la función que actualiza el sintetizador
+        if (tiempo_ms / portTICK_PERIOD_MS < 1) {
+            // Si el tiempo es menor a 1 tick, espera al menos 1 tick
+            SerialBT.println("Tiempo menor a 1 tick, esperando 1 ms");
+            digitalWrite(2, LOW);
+            vTaskDelay(1);
+        } else {
+            // Espera el tiempo calculado
+            digitalWrite(2, LOW);
+            vTaskDelay(pdMS_TO_TICKS(tiempo_ms));
+        }
+        // vTaskDelay(tiempo_ms / portTICK_PERIOD_MS); // Espera el tiempoPaso antes de volver a ejecutar
+    }
+}
+
+// Tarea para parpadear LED
+void blinkTask(void *pvParameters)
+{
+    pinMode(2, OUTPUT);
+
+    while (true) {
+        digitalWrite(2, HIGH);          // Encender LED
+        vTaskDelay(pdMS_TO_TICKS(500)); // Esperar 500 ms
+
+        digitalWrite(2, LOW);           // Apagar LED
+        vTaskDelay(pdMS_TO_TICKS(500)); // Esperar 500 ms
     }
 }
 
@@ -74,6 +95,7 @@ void setup()
                             .write_mode        = SintetizadorCambiaModo,
                             .configurarBarrido = configurarBarrido,
                             .paraBarrido       = paraBarrido};
+
     // Inicia la comunicación serial para depuración
     Serial.begin(9600);
     // Inicia la comunicación Bluetooth
@@ -81,31 +103,32 @@ void setup()
     // Inicia la comunicación I2C
     Wire.begin();
     Wire.setClock(400000); // 400 kHz
-
     // Configuración inicial del sintetizador (ejemplo)
     SintetizadorInicializa();
     Comandos_init(&uart);
     comandos_i2c(&i2c);
-    // modoactual = NORMAL;
-    // lcd.begin(16, 2);
-    // lcd.createChar(0, flecha);
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, HIGH);
-    if (xTaskCreate(vTareaPeriodica, "TareaPeriodica", 2048, NULL, 1, &tareaPeriodicaHandle) != pdPASS) {
-        // digitalWrite(LED_BUILTIN, LOW);
+    //  xTaskCreatePinnedToCore(
+    //  blinkTask,         // Función de la tarea
+    //  "Blink Task",      // Nombre de la tarea
+    //  1000,              // Stack size en palabras (no bytes)
+    //  NULL,              // Parámetro para la tarea
+    //  1,                 // Prioridad
+    //  NULL,              // Manejador (no lo usamos)
+    //  1                  // Núcleo (0 o 1)
+    //);
+    pinMode(2, OUTPUT); // Configura el pin 2 como salida para el LED
+    digitalWrite(2, LOW);
+    if (xTaskCreate(vTareaPeriodica, "TareaPeriodica", 4096, NULL, 1, &tareaPeriodicaHandle) != pdPASS) {
+        digitalWrite(2, HIGH);
     }
 }
 char caracter_recibido;
 void loop()
 { // Codigo para lectura en consola.
     if (SerialBT.available()) {
-        // SerialBT.println("Comando Recbido"); // Esto que hace ?
         caracter_recibido = SerialBT.read();
-        // Serial.print("Se Recibio:");
         Serial.print(caracter_recibido);
         if (Comandos_procesa(static_cast<char>(caracter_recibido))) {
-            // SerialBT.println("Comando procesado!");
-            // Serial.println("Comando procesado!");
         }
     }
 }

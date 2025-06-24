@@ -79,9 +79,6 @@ void configurarSintetizadorI2C() {
     i2c_configurado = true;
 }
 
-
-
-
 void SintetizadorInicializa(void)
 {
     // Ejemplo de configuración inicial del Zarlink SP5769
@@ -102,15 +99,6 @@ void SintetizadorFijaFrecuencia(void)
     Wire.write(divH);
     Wire.write(divL);
     enviari2c(Wire.endTransmission());
-    SerialBT.print("Frecuencia ajustada en:");
-    SerialBT.print(frecuencia); // Muestra la frecuencia ajustada
-    SerialBT.print(" MHz, Divisor: ");  
-    SerialBT.print(divisor); // Muestra el divisor calculado    
-    SerialBT.print(" (H: ");    
-    SerialBT.print(divH); // Muestra el byte alto del divisor   
-    SerialBT.print(", L: ");    
-    SerialBT.print(divL); // Muestra el byte bajo del divisor
-    SerialBT.println(")\n");
 }
 
 void SintetizadorCambiaFrecuencia(int freq){
@@ -160,8 +148,13 @@ void SintetizadorCambiaModo(int mode){
 int SintetizadorActualizaEstado()
 {
     uint8_t temp;
-    Wire.beginTransmission(zarlink); //Donde cambia el último bit (R/W) de la dirección I2C???
+    static int preguntarEstado = 1; // Variable estática para controlar la primera lectura del estado
+    if (preguntarEstado) {
     Wire.requestFrom(zarlink, 1);
+    digitalWrite(2, LOW);
+    preguntarEstado=0; // Desactiva la lectura del estado después de la primera vez
+    }
+
     if (Wire.available()) {
         Wire.readBytes(&temp, 1);
         if ((STATUS_POR & temp)) {
@@ -177,7 +170,7 @@ int SintetizadorActualizaEstado()
         }
         return 0;
     }
-    SerialBT.println("ERROR AL LEER ESTADO");
+    //SerialBT.println("ERROR AL LEER ESTADO");
     return 0;
 }
 
@@ -295,16 +288,15 @@ int SintetizadorTick(void)
     case NORMAL:
         // Lógica para el modo normal
         if (barrer) {
-            SintetizadorTickBarrido(); // Llama a la función de barrido si está activo
-            SerialBT.print("Barrido activo");
+           SintetizadorTickBarrido(); // Llama a la función de barrido si está activo
         }else{
             if(actualizarFrecuencia){
                 pasoTiempo = 100; // Establece el tiempo de paso en ms para el modo normal
                 SintetizadorFijaFrecuencia(); // Envia la frecuencia al sintetizador
                 actualizarFrecuencia = false; // Desactiva la actualización de frecuencia
-            }
-            SerialBT.print("XD");  
+            }  
             SintetizadorActualizaEstado(); // Actualiza el estado del sintetizador
+            digitalWrite(2, LOW);
         }
         // Enviar la nueva frecuencia al sintetizador I2C
         break;
