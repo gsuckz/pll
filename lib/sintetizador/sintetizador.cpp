@@ -33,8 +33,6 @@ static int pasoTiempo         = 10;            // Duración cada paso del barrid
 static int frecuenciaBarridoMin = FREC_MIN;     // Frecuencia minima del barrido
 static int frecuenciaBarridoMax = FREC_MAX;     // Frecuencia maxima del barrido
 static estadoPLL estadoActual   = ERROR_ALIMENTACION; // Estado del PLL
-static bool leerEstado          = false;        // Indica si se debe leer el estado del sintetizador
-// static int tiempoPasoFrecuencia = 100;      // Tiempo en ms entre pasos de frecuencia en modo barrido
 static bool barrer                         = 0;
 static bool actualizarFrecuencia           = 1;
 static byte bufferH[TAMANO_BUFFER_BARRIDO] = {0}; // Buffer para almacenar los datos del barrido
@@ -78,21 +76,6 @@ const char *nombresTests[tipoTest_MAX] = {[CP_snk] = "CP snk", [CP_src] = "CP sr
 void configurarSintetizadorI2C() {
     static bool i2c_configurado = false;
     if (i2c_configurado) return;
-
-    //i2c_config_t conf;
-    //conf.mode = I2C_MODE_MASTER;
-    //conf.sda_io_num = SDA_PIN;
-    //conf.scl_io_num = SCL_PIN;
-    //conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-    //conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-    //conf.master.clk_speed = 100000; // 100 kHz
-//
-    //i2c_param_config(I2C_NUM_0, &conf);
-    //i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
-
-    //Wire.begin(SDA_PIN, SCL_PIN);
-    //Wire.setClock(100000);
-
     i2c_configurado = true;
 }
 
@@ -130,15 +113,13 @@ void SintetizadorFijaFrecuencia(void)
     SerialBT.println(")\n");
 }
 
-void SintetizadorCambiaFrecuencia(int freq)
-{
+void SintetizadorCambiaFrecuencia(int freq){
     frecuencia = freq;
     barrer     = 0; // Desactiva el barrido de frecuencias
     actualizarFrecuencia = 1; // Activa la actualización de frecuencia
 }
 
-void SintetizadorCambiaModo(int mode)
-{
+void SintetizadorCambiaModo(int mode){
     switch (mode) {
     case NORMAL:
         SintetizadorInicializa();
@@ -179,10 +160,8 @@ void SintetizadorCambiaModo(int mode)
 int SintetizadorActualizaEstado()
 {
     uint8_t temp;
-    // actualizarFrecuencia = 0; // Desactiva la actualización de frecuencia al leer el estado
     Wire.beginTransmission(zarlink); //Donde cambia el último bit (R/W) de la dirección I2C???
     Wire.requestFrom(zarlink, 1);
-    // actualizarFrecuencia = 1; // Reactiva la actualización de frecuencia después de leer el estado
     if (Wire.available()) {
         Wire.readBytes(&temp, 1);
         if ((STATUS_POR & temp)) {
@@ -227,23 +206,12 @@ void  enviari2c(uint8_t valor)
     switch (error) {
     case ENVIADO:
         SerialBT.println("OK");
-        //  break;case muyLargo:
-        //    SerialBT.println("MENSAJE DEMASIADO LARGO");
-        //  break;case nackAddres:
-        //    SerialBT.println("ERROR DE DIRECCION");
-        //  break;case nackData:
-        //    SerialBT.println("ERROR DE ENVIO DE DATOS");
-        //  break;case ERROR:
-        //    SerialBT.println("ERROR DESCONOCIDO");
-        //  break;case timeout:
-        //    SerialBT.println("TIMEOUT");
         break;
     default:
         SerialBT.println("ERROR DE COMUNICACION!");
         break;
     }
 }
-
 /*
 Configura el Timer para el barrido de frecuecnias
 */
@@ -272,9 +240,6 @@ void configurarBarrido(int min, int max, int duracion)
         bufferH[i] = (divisor >> 8) & 0x7F; // Llena el buffer con las frecuencias del barrido
         bufferL[i] = divisor & 0xFF;        // Llena el buffer con las frecuencias del barrido
         temp += pasoFrecuencia;             // Incrementa la sigueinte frecuencia a guardar en el paso definido
-        //if (temp > frecuenciaBarridoMax) {
-        //    temp = frecuenciaBarridoMin; // Reinicia la frecuencia temporal al mínimo si supera el máximo
-        //}
     }
     SerialBT.print("Barrido configurado: ");
     SerialBT.print("Frecuencia Minima: ");
@@ -299,26 +264,7 @@ void paraBarrido(void)
     SerialBT.println(frecuencia); // Muestra la frecuencia actual
 }
 
-
-
-
-
-
 void enviarPasoI2C() {
-    //uint8_t byteH = bufferH[pasoActual];
-    //uint8_t byteL = bufferL[pasoActual];
-    //i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    //if (!cmd) return;
-    //i2c_master_start(cmd);
-    //i2c_master_write_byte(cmd, (zarlink << 1) | I2C_MASTER_WRITE, false); // sin ACK
-    //i2c_master_write_byte(cmd, byteH, false);
-    //i2c_master_write_byte(cmd, byteL, false);
-    //i2c_master_stop(cmd);
-    //// Lanza la transmisión SIN esperar
-    //i2c_master_cmd_begin(I2C_NUM_0, cmd, 0); // timeout 0 → no bloquea
-    //i2c_cmd_link_delete(cmd);
-    //// Avanza el paso (cíclico)
-
     Wire.beginTransmission(zarlink);
     Wire.write(bufferH[pasoActual]);
     Wire.write(bufferL[pasoActual]);
@@ -344,9 +290,6 @@ void SintetizadorTickBarrido(void)
 
 int SintetizadorTick(void)
 {
-    // Aquí puedes implementar la lógica de actualización periódica del sintetizador
-    // Por ejemplo, podrías verificar el estado del sintetizador o actualizar la frecuencia
-    // según sea necesario.
     SerialBT.println("SintetizadorTick llamado");
     switch (modoactual) {
     case NORMAL:
@@ -360,8 +303,7 @@ int SintetizadorTick(void)
                 SintetizadorFijaFrecuencia(); // Envia la frecuencia al sintetizador
                 actualizarFrecuencia = false; // Desactiva la actualización de frecuencia
             }
-            SerialBT.print("XD");
-            
+            SerialBT.print("XD");  
             SintetizadorActualizaEstado(); // Actualiza el estado del sintetizador
         }
         // Enviar la nueva frecuencia al sintetizador I2C
@@ -378,6 +320,5 @@ int SintetizadorTick(void)
         // Lógica para el modo COMPARADOR_FASE_TEST
         break;
     }
-
     return pasoTiempo; // Retorna el tiempo de paso en ms para el barrido
 }
