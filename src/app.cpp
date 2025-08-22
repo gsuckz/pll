@@ -55,7 +55,7 @@ void vTareaPeriodica(void *pvParameters)
         // SerialBT.println("Tarea periódica ejecutada");
         // const int tiempo_ms = SintetizadorTick();
         static int tiempo_ms = 100;
-        
+
         tiempo_ms = SintetizadorTick(); // Llama a la función que actualiza el sintetizador
         if (tiempo_ms / portTICK_PERIOD_MS < 1) {
             // Si el tiempo es menor a 1 tick, espera al menos 1 tick
@@ -71,33 +71,29 @@ void vTareaPeriodica(void *pvParameters)
     }
 }
 
-const int rs = D1, en = D2, d4 = D4, d5 = D5, d6 = D6, d7 = D7;
+// const int rs= D1, en=D2, d4= D4, d5=D5, d6=D6, d7=D7;
+const int rs = D7, en = D6, d4 = D5, d5 = D4, d6 = D2, d7 = D1;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7); // Instancia LCD
 
-void vtareaMostrarFrecuencia(void *pvParameters) {
-  char buffer[20];
-  for (;;) {
-    // Mostrar en LCD
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    snprintf(buffer, sizeof(buffer), "Frec: %d Hz", 100);
-    lcd.print(buffer);
-    vTaskDelay(pdMS_TO_TICKS(100)); // cada 1 segundo
-  }
-}
-
-// Tarea para parpadear LED
-void blinkTask(void *pvParameters)
+void vtareaMostrarFrecuencia(void *pvParameters)
 {
-    pinMode(2, OUTPUT);
+    char buffer[17]; // 16 + null
+    for (;;) {
+lcd.clear();
+int frecuencia = sintetizadorFrecuencia();
+int estado = sintetizadorEstado();
+lcd.setCursor(0, 0);
+snprintf(buffer, sizeof(buffer), "Frec: %d Hz", frecuencia);
+lcd.print(buffer);
 
-    while (true) {
-        digitalWrite(2, HIGH);          // Encender LED
-        vTaskDelay(pdMS_TO_TICKS(500)); // Esperar 500 ms
-
-        digitalWrite(2, LOW);           // Apagar LED
-        vTaskDelay(pdMS_TO_TICKS(500)); // Esperar 500 ms
-    }
+lcd.setCursor(0, 1);
+if (estado) {
+    lcd.print("Enclavado!");
+} else {
+    lcd.print("No enclavado");
+  }
+  vTaskDelay(pdMS_TO_TICKS(200)); // Actualiza cada 1 segundo  
+}
 }
 
 TaskHandle_t tareaPeriodicaHandle = NULL;
@@ -120,6 +116,8 @@ void setup()
     Wire.setClock(400000); // 400 kHz
     // Configuración inicial del sintetizador (ejemplo)
     SintetizadorInicializa();
+    lcd.begin(16, 2);
+
     Comandos_init(&uart);
     comandos_i2c(&i2c);
     pinMode(2, OUTPUT); // Configura el pin 2 como salida para el LED
@@ -127,15 +125,14 @@ void setup()
     if (xTaskCreate(vTareaPeriodica, "TareaPeriodica", 4096, NULL, 2, &tareaPeriodicaHandle) != pdPASS) {
         digitalWrite(2, HIGH);
     }
-      xTaskCreatePinnedToCore(
-    vtareaMostrarFrecuencia,   // función de la tarea
-    "TareaMostrarFrec",       // nombre
-    2048,                     // stack
-    NULL,                     // parámetros
-    1,                        // prioridad
-    NULL,                     // handle
-    1                         // core (opcional, ESP32)
-  );
+    xTaskCreatePinnedToCore(vtareaMostrarFrecuencia, // función de la tarea
+                            "TareaMostrarFrec",      // nombre
+                            2048,                    // stack
+                            NULL,                    // parámetros
+                            1,                       // prioridad
+                            NULL,                    // handle
+                            1                        // core (opcional, ESP32)
+    );
 }
 
 char caracter_recibido;

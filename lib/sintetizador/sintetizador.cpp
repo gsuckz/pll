@@ -314,3 +314,11 @@ int SintetizadorTick(void)
     }
     return pasoTiempo; // Retorna el tiempo de paso en ms para el barrido
     }
+
+    int sintetizadorFrecuencia(void){
+    return frecuencia; // Retorna la frecuencia actual del sintetizador
+    }
+
+    int sintetizadorEstado(void) {
+        return (estadoActual == ENCLAVADO) ? 1 : 0; // Retorna 1 si el sintetizador está enclavado, 0 si no
+    }

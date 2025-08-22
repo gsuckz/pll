@@ -39,4 +39,7 @@ void configurarBarrido(int min, int max, int duracion);
 
 void paraBarrido(void);
 
+int sintetizadorFrecuencia(void);
+int sintetizadorEstado();
+
 #endif /*SINTETIZADOR_H*/
