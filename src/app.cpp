@@ -54,9 +54,9 @@ void vTareaPeriodica(void *pvParameters)
         }
         // SerialBT.println("Tarea periódica ejecutada");
         // const int tiempo_ms = SintetizadorTick();
-        const int tiempo_ms = 100;
+        static int tiempo_ms = 100;
         
-        SintetizadorTick(); // Llama a la función que actualiza el sintetizador
+        tiempo_ms = SintetizadorTick(); // Llama a la función que actualiza el sintetizador
         if (tiempo_ms / portTICK_PERIOD_MS < 1) {
             // Si el tiempo es menor a 1 tick, espera al menos 1 tick
             SerialBT.println("Tiempo menor a 1 tick, esperando 1 ms");
@@ -69,6 +69,21 @@ void vTareaPeriodica(void *pvParameters)
         }
         // vTaskDelay(tiempo_ms / portTICK_PERIOD_MS); // Espera el tiempoPaso antes de volver a ejecutar
     }
+}
+
+const int rs = D1, en = D2, d4 = D4, d5 = D5, d6 = D6, d7 = D7;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7); // Instancia LCD
+
+void vtareaMostrarFrecuencia(void *pvParameters) {
+  char buffer[20];
+  for (;;) {
+    // Mostrar en LCD
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    snprintf(buffer, sizeof(buffer), "Frec: %d Hz", 100);
+    lcd.print(buffer);
+    vTaskDelay(pdMS_TO_TICKS(100)); // cada 1 segundo
+  }
 }
 
 // Tarea para parpadear LED
@@ -107,21 +122,22 @@ void setup()
     SintetizadorInicializa();
     Comandos_init(&uart);
     comandos_i2c(&i2c);
-    //  xTaskCreatePinnedToCore(
-    //  blinkTask,         // Función de la tarea
-    //  "Blink Task",      // Nombre de la tarea
-    //  1000,              // Stack size en palabras (no bytes)
-    //  NULL,              // Parámetro para la tarea
-    //  1,                 // Prioridad
-    //  NULL,              // Manejador (no lo usamos)
-    //  1                  // Núcleo (0 o 1)
-    //);
     pinMode(2, OUTPUT); // Configura el pin 2 como salida para el LED
     digitalWrite(2, LOW);
-    if (xTaskCreate(vTareaPeriodica, "TareaPeriodica", 4096, NULL, 1, &tareaPeriodicaHandle) != pdPASS) {
+    if (xTaskCreate(vTareaPeriodica, "TareaPeriodica", 4096, NULL, 2, &tareaPeriodicaHandle) != pdPASS) {
         digitalWrite(2, HIGH);
     }
+      xTaskCreatePinnedToCore(
+    vtareaMostrarFrecuencia,   // función de la tarea
+    "TareaMostrarFrec",       // nombre
+    2048,                     // stack
+    NULL,                     // parámetros
+    1,                        // prioridad
+    NULL,                     // handle
+    1                         // core (opcional, ESP32)
+  );
 }
+
 char caracter_recibido;
 void loop()
 { // Codigo para lectura en consola.

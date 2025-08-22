@@ -313,4 +313,4 @@ int SintetizadorTick(void)
         break;
     }
     return pasoTiempo; // Retorna el tiempo de paso en ms para el barrido
-}
+    }
