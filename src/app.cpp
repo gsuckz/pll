@@ -1,6 +1,7 @@
 #include "comandos.h"
 #include "driver/i2c.h"
 #include "sintetizador.h"
+#include "teclado.h"
 #include "ticker.h"
 #include <Arduino.h>
 #include <BluetoothSerial.h>
@@ -80,8 +81,8 @@ void vtareaMostrarFrecuencia(void *pvParameters)
     char buffer[17]; // 16 + null
     for (;;) {
 lcd.clear();
-int frecuencia = sintetizadorFrecuencia();
-int estado = sintetizadorEstado();
+static int frecuencia = sintetizadorFrecuencia();
+static int estado = sintetizadorEstado();
 lcd.setCursor(0, 0);
 snprintf(buffer, sizeof(buffer), "Frec: %d Hz", frecuencia);
 lcd.print(buffer);
@@ -95,6 +96,7 @@ if (estado) {
   vTaskDelay(pdMS_TO_TICKS(200)); // Actualiza cada 1 segundo  
 }
 }
+
 
 TaskHandle_t tareaPeriodicaHandle = NULL;
 void setup()
@@ -129,6 +131,16 @@ void setup()
                             "TareaMostrarFrec",      // nombre
                             2048,                    // stack
                             NULL,                    // parámetros
+                            1,                       // prioridad
+                            NULL,                    // handle
+                            1                        // core (opcional, ESP32)
+    );
+
+    TecladoTaskParams tecladoConfig = {xEventGroupCreate(), 100, A0};
+    xTaskCreatePinnedToCore(tecladoTask, // función de la tarea
+                            "TareaTeclado",      // nombre
+                            TECLADO_TASK_STACK_SIZE,                    // stack
+                            &tecladoConfig,                    // parámetros
                             1,                       // prioridad
                             NULL,                    // handle
                             1                        // core (opcional, ESP32)

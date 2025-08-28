@@ -1,10 +1,30 @@
 
-#ifndef COMANDOS_H
-#define COMANDOS_H
+#ifndef INTERFAZ_H
+#define INTERFAZ_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef enum {
+    NOTHING     = 0,
+    SELECT_KEY  = 1,
+    LEFT_KEY    = 2,
+    DOWN_KEY    = 3,
+    UP_KEY      = 4,
+    RIGHT_KEY   = 5
+} codigoTecla;
+
+typedef struct teclado{
+    int cola[10];   
+    int cursor;
+
+}teclado;
+
+int actualizarTeclado(void);
+int leerCola(void);
+int generarTeclado(void);
+
 
 #ifdef __cplusplus
 }

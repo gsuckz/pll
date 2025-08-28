@@ -1,4 +1,5 @@
 #include "sintetizador.h"
+#include "interfaz.h"
 #include "driver/i2c.h"
 #include <Arduino.h>
 #include <BluetoothSerial.h>
@@ -322,3 +323,38 @@ int SintetizadorTick(void)
     int sintetizadorEstado(void) {
         return (estadoActual == ENCLAVADO) ? 1 : 0; // Retorna 1 si el sintetizador está enclavado, 0 si no
     }
+
+
+
+int sintetizadorTeclado(codigoTecla tecla){
+    static int nuevaFrecuencia = frecuencia;
+    static int pasoFrecuenciaTeclado = 1;
+    switch (tecla)
+    {
+    case SELECT_KEY:
+        /* code */
+        SintetizadorCambiaFrecuencia(nuevaFrecuencia);
+        break;
+    case LEFT_KEY:
+        /* code */   
+        pasoFrecuenciaTeclado *= 10;
+        if(pasoFrecuenciaTeclado > 100000) pasoFrecuenciaTeclado = 1;
+        break;
+    case DOWN_KEY:  
+        nuevaFrecuencia -= pasoFrecuenciaTeclado;
+        if(nuevaFrecuencia < FREC_MIN) nuevaFrecuencia = FREC_MAX;
+        break;
+    case UP_KEY:  
+        nuevaFrecuencia += pasoFrecuenciaTeclado;
+        if(nuevaFrecuencia > FREC_MAX) nuevaFrecuencia = FREC_MIN;
+        break;
+    case RIGHT_KEY: 
+        pasoFrecuenciaTeclado /= 10;
+        if(pasoFrecuenciaTeclado > 100000) pasoFrecuenciaTeclado = 1;
+        break;  
+    case NOTHING:       
+        break;      
+    default:
+        break;
+    }
+}
