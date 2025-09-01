@@ -20,8 +20,8 @@ typedef struct I2C {
     void (*write_freq)(int valor);
     int (*read_state)();
     void (*write_mode)(int mode);
-    void(*configurarBarrido)(int min,int max,int step);
-    void(*paraBarrido)();
+    void (*configurarBarrido)(int min, int max, int step);
+    void (*paraBarrido)();
 } I2C;
 
 void comandos_i2c(const I2C *i2c);

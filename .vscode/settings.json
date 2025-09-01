@@ -18,7 +18,9 @@
         "string.h": "c",
         "sintetizador.h": "c",
         "liquidcrystal.h": "c",
-        "print.h": "c"
+        "print.h": "c",
+        "interfaz copy": "cpp",
+        "teclado.h": "c"
     },
     "editor.formatOnSave": true
 }

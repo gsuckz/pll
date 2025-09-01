@@ -1,11 +1,12 @@
 #include "sintetizador.h"
-#include "interfaz.h"
 #include "driver/i2c.h"
+#include "interfaz.h"
 #include <Arduino.h>
 #include <BluetoothSerial.h>
 #include <Wire.h>
 #include <ctype.h>
 #include <stdint.h>
+
 
 /* Macros */
 
@@ -28,12 +29,12 @@ boolean modoTest           = false; // Leer para entender...
 enum TipoTest_e testActual = CP_snk;
 
 /* Variables privadas*/
-static int frecuencia         = 10600; // Frecuencia actual del sintetizador en MHz
-static int pasoFrecuencia     = 1;
-static int pasoTiempo         = 10;            // Duración cada paso del barrido en ms
-static int frecuenciaBarridoMin = FREC_MIN;     // Frecuencia minima del barrido
-static int frecuenciaBarridoMax = FREC_MAX;     // Frecuencia maxima del barrido
-static estadoPLL estadoActual   = ERROR_ALIMENTACION; // Estado del PLL
+static int frecuencia                      = 10600; // Frecuencia actual del sintetizador en MHz
+static int pasoFrecuencia                  = 1;
+static int pasoTiempo                      = 10;                 // Duración cada paso del barrido en ms
+static int frecuenciaBarridoMin            = FREC_MIN;           // Frecuencia minima del barrido
+static int frecuenciaBarridoMax            = FREC_MAX;           // Frecuencia maxima del barrido
+static estadoPLL estadoActual              = ERROR_ALIMENTACION; // Estado del PLL
 static bool barrer                         = 0;
 static bool actualizarFrecuencia           = 1;
 static byte bufferH[TAMANO_BUFFER_BARRIDO] = {0}; // Buffer para almacenar los datos del barrido
@@ -46,8 +47,7 @@ static struct {
 } constexpr DIVISOR_REFERENCIA[] = {
     {0b0000, 2},  {0b0001, 4}, {0b0010, 8},  {0b0011, 16}, {0b0100, 32}, {0b0101, 64}, {0b0110, 128}, {0b0111, 256},
     {0b1000, 24}, {0b1001, 5}, {0b1010, 10}, {0b1011, 20}, {0b1100, 40}, {0b1101, 80}, {0b1110, 160}, {0b1111, 320}};
-    
-    
+
 enum DIVISORES : int {
     DIV2,
     DIV4,
@@ -67,14 +67,16 @@ enum DIVISORES : int {
     DIV320
 };
 
-static modo modoactual                 = NORMAL;
-const int zarlink                      = 0b1100001; // Dirección I2C del Zarlink SP5769 (Wire maneja el ultimo bit de acuerdo a la función que se llame)
+static modo modoactual = NORMAL;
+const int zarlink =
+    0b1100001; // Dirección I2C del Zarlink SP5769 (Wire maneja el ultimo bit de acuerdo a la función que se llame)
 const char *nombresTests[tipoTest_MAX] = {[CP_snk] = "CP snk", [CP_src] = "CP src", [CP_dis] = "CP dis"};
 
-#define SDA_PIN 21  // ⚠️ Ajustar si usás otros pines
+#define SDA_PIN 21 // ⚠️ Ajustar si usás otros pines
 #define SCL_PIN 22
 
-void configurarSintetizadorI2C() {
+void configurarSintetizadorI2C()
+{
     static bool i2c_configurado = false;
     if (i2c_configurado) return;
     i2c_configurado = true;
@@ -102,13 +104,15 @@ void SintetizadorFijaFrecuencia(void)
     enviari2c(Wire.endTransmission());
 }
 
-void SintetizadorCambiaFrecuencia(int freq){
-    frecuencia = freq;
-    barrer     = 0; // Desactiva el barrido de frecuencias
+void SintetizadorCambiaFrecuencia(int freq)
+{
+    frecuencia           = freq;
+    barrer               = 0; // Desactiva el barrido de frecuencias
     actualizarFrecuencia = 1; // Activa la actualización de frecuencia
 }
 
-void SintetizadorCambiaModo(int mode){
+void SintetizadorCambiaModo(int mode)
+{
     switch (mode) {
     case NORMAL:
         SintetizadorInicializa();
@@ -145,15 +149,14 @@ void SintetizadorCambiaModo(int mode){
     }
 }
 
-
 int SintetizadorActualizaEstado()
 {
     uint8_t temp;
     static int preguntarEstado = 1; // Variable estática para controlar la primera lectura del estado
     if (preguntarEstado) {
-    Wire.requestFrom(zarlink, 1);
-    digitalWrite(2, LOW);
-    preguntarEstado=0; // Desactiva la lectura del estado después de la primera vez
+        Wire.requestFrom(zarlink, 1);
+        digitalWrite(2, LOW);
+        preguntarEstado = 0; // Desactiva la lectura del estado después de la primera vez
     }
 
     if (Wire.available()) {
@@ -171,7 +174,7 @@ int SintetizadorActualizaEstado()
         }
         return 0;
     }
-    //SerialBT.println("ERROR AL LEER ESTADO");
+    // SerialBT.println("ERROR AL LEER ESTADO");
     return 0;
 }
 
@@ -194,7 +197,7 @@ int estadoDelSintetizador()
     return estadoActual; // Retorna el estado actual del sintetizador
 }
 
-void  enviari2c(uint8_t valor)
+void enviari2c(uint8_t valor)
 {
     i2cError error = (i2cError)valor;
     switch (error) {
@@ -210,7 +213,8 @@ void  enviari2c(uint8_t valor)
 Configura el Timer para el barrido de frecuecnias
 */
 void configurarBarrido(int min, int max, int duracion)
-{   barrer = 0; // Desactiva el barrido de frecuencias
+{
+    barrer = 0; // Desactiva el barrido de frecuencias
     int numeroPasosf, numeroPasosT = 0;
     int divisor          = 1;                    // Variable para almacenar el divisor calculado
     int temp             = frecuenciaBarridoMin; // Variable temporal para la frecuencia mínima
@@ -244,26 +248,28 @@ void configurarBarrido(int min, int max, int duracion)
     SerialBT.print(pasoFrecuencia);
     SerialBT.print(" MHz, Duración del Barrido: ");
     SerialBT.print(duracion);
-    pasoActual = 0; // Reinicia el paso actual del barrido
-    barrer = true; // Activa el barrido de frecuencias
+    pasoActual = 0;    // Reinicia el paso actual del barrido
+    barrer     = true; // Activa el barrido de frecuencias
 }
 
 void paraBarrido(void)
 {
     barrer = false; // Desactiva el barrido de frecuencias
-    frecuencia = frecuenciaBarridoMin + pasoFrecuencia * pasoActual; // Fija la frecuencia actual al valor mínimo del barrido más el paso actual
-    actualizarFrecuencia = true; // Activa la actualización de frecuencia
+    frecuencia =
+        frecuenciaBarridoMin +
+        pasoFrecuencia * pasoActual; // Fija la frecuencia actual al valor mínimo del barrido más el paso actual
+    actualizarFrecuencia = true;     // Activa la actualización de frecuencia
     // SintetizadorFijaFrecuencia(); // Asegura que la frecuencia actual se envíe al sintetizador
     SerialBT.println("Frecuencia barrido detenida, frecuencia actual fijada: ");
     SerialBT.println(frecuencia); // Muestra la frecuencia actual
 }
 
-void enviarPasoI2C() {
+void enviarPasoI2C()
+{
     Wire.beginTransmission(zarlink);
     Wire.write(bufferH[pasoActual]);
     Wire.write(bufferL[pasoActual]);
     enviari2c(Wire.endTransmission());
-
 }
 
 void SintetizadorTickBarrido(void)
@@ -271,8 +277,8 @@ void SintetizadorTickBarrido(void)
     if (barrer) {
         if (pasoActual < numeroPasos) {
             Wire.beginTransmission(zarlink);
-            Wire.write(bufferH[pasoActual]); // Envía el byte alto de la frecuencia al sintetizador
-            Wire.write(bufferL[pasoActual]); // Envía el byte bajo de la frecuencia al sintetizador
+            Wire.write(bufferH[pasoActual]);   // Envía el byte alto de la frecuencia al sintetizador
+            Wire.write(bufferL[pasoActual]);   // Envía el byte bajo de la frecuencia al sintetizador
             enviari2c(Wire.endTransmission()); // Envía los datos al sintetizador y verifica errores
             pasoActual = (pasoActual + 1) % numeroPasos;
         } else {
@@ -284,20 +290,18 @@ void SintetizadorTickBarrido(void)
 
 int SintetizadorTick(void)
 {
-    SerialBT.println("SintetizadorTick llamado");
     switch (modoactual) {
     case NORMAL:
         // Lógica para el modo normal
         if (barrer) {
-           SintetizadorTickBarrido(); // Llama a la función de barrido si está activo
-        }else{
-            if(actualizarFrecuencia){
-                pasoTiempo = 100; // Establece el tiempo de paso en ms para el modo normal
+            SintetizadorTickBarrido(); // Llama a la función de barrido si está activo
+        } else {
+            if (actualizarFrecuencia) {
+                pasoTiempo = 100;             // Establece el tiempo de paso en ms para el modo normal
                 SintetizadorFijaFrecuencia(); // Envia la frecuencia al sintetizador
                 actualizarFrecuencia = false; // Desactiva la actualización de frecuencia
-            }  
+            }
             SintetizadorActualizaEstado(); // Actualiza el estado del sintetizador
-            digitalWrite(2, LOW);
         }
         // Enviar la nueva frecuencia al sintetizador I2C
         break;
@@ -313,48 +317,80 @@ int SintetizadorTick(void)
         // Lógica para el modo COMPARADOR_FASE_TEST
         break;
     }
-    return pasoTiempo; // Retorna el tiempo de paso en ms para el barrido
-    }
+    if (pasoTiempo < 1) pasoTiempo = 1; // Asegura que el tiempo de paso no sea menor a 1 ms
+    return pasoTiempo;                  // Retorna el tiempo de paso en ms para el barrido
+}
 
-    int sintetizadorFrecuencia(void){
-    return frecuencia; // Retorna la frecuencia actual del sintetizador
-    }
+static struct EstadoUiSintetizador {
+    int nuevaFrecuencia;
+    int pasoFrecuenciaTeclado;
+    int edicion;
+} estadoUi = {.nuevaFrecuencia = frecuencia, .pasoFrecuenciaTeclado = 1, .edicion = 0};
 
-    int sintetizadorEstado(void) {
-        return (estadoActual == ENCLAVADO) ? 1 : 0; // Retorna 1 si el sintetizador está enclavado, 0 si no
-    }
+int sintetizadorFrecuencia(void)
+{
+    if (estadoUi.edicion)
+        return estadoUi.nuevaFrecuencia;
+    else
+        return frecuencia; // Retorna la frecuencia actual del sintetizador
+}
 
+int sintetizadorEstado(void)
+{
+    return (estadoActual == ENCLAVADO) ? 1 : 0; // Retorna 1 si el sintetizador está enclavado, 0 si no
+}
 
+int sintetizadorEdicion(void)
+{
+    return estadoUi.edicion; // Retorna el estado de edición (0 si no está editando, >0 si está editando)
+}
 
-int sintetizadorTeclado(codigoTecla tecla){
-    static int nuevaFrecuencia = frecuencia;
-    static int pasoFrecuenciaTeclado = 1;
-    switch (tecla)
-    {
-    case SELECT_KEY:
-        /* code */
-        SintetizadorCambiaFrecuencia(nuevaFrecuencia);
-        break;
-    case LEFT_KEY:
-        /* code */   
-        pasoFrecuenciaTeclado *= 10;
-        if(pasoFrecuenciaTeclado > 100000) pasoFrecuenciaTeclado = 1;
-        break;
-    case DOWN_KEY:  
-        nuevaFrecuencia -= pasoFrecuenciaTeclado;
-        if(nuevaFrecuencia < FREC_MIN) nuevaFrecuencia = FREC_MAX;
-        break;
-    case UP_KEY:  
-        nuevaFrecuencia += pasoFrecuenciaTeclado;
-        if(nuevaFrecuencia > FREC_MAX) nuevaFrecuencia = FREC_MIN;
-        break;
-    case RIGHT_KEY: 
-        pasoFrecuenciaTeclado /= 10;
-        if(pasoFrecuenciaTeclado > 100000) pasoFrecuenciaTeclado = 1;
-        break;  
-    case NOTHING:       
-        break;      
-    default:
-        break;
+void sintetizadorTeclado(codigoTecla tecla)
+{
+
+    if (!estadoUi.edicion) {
+        if (tecla == SELECT_KEY) {
+            estadoUi.edicion               = 1;
+            estadoUi.nuevaFrecuencia       = frecuencia;
+            estadoUi.pasoFrecuenciaTeclado = 1;
+        }
+    } else {
+        switch (tecla) {
+        case SELECT_KEY:
+            /* code */
+            SintetizadorCambiaFrecuencia(estadoUi.nuevaFrecuencia);
+            estadoUi.edicion = 0;
+            frecuencia       = estadoUi.nuevaFrecuencia;
+            break;
+        case LEFT_KEY:
+            /* code */
+            estadoUi.pasoFrecuenciaTeclado *= 10;
+            estadoUi.edicion++;
+            if (estadoUi.pasoFrecuenciaTeclado > 100000) {
+                estadoUi.pasoFrecuenciaTeclado = 1;
+                estadoUi.edicion               = 1;
+            }
+            break;
+        case DOWN_KEY:
+            estadoUi.nuevaFrecuencia -= estadoUi.pasoFrecuenciaTeclado;
+            if (estadoUi.nuevaFrecuencia < FREC_MIN) estadoUi.nuevaFrecuencia = FREC_MAX;
+            break;
+        case UP_KEY:
+            estadoUi.nuevaFrecuencia += estadoUi.pasoFrecuenciaTeclado;
+            if (estadoUi.nuevaFrecuencia > FREC_MAX) estadoUi.nuevaFrecuencia = FREC_MIN;
+            break;
+        case RIGHT_KEY:
+            if (estadoUi.edicion >= 1) {
+                estadoUi.pasoFrecuenciaTeclado /= 10;
+                estadoUi.edicion--;
+            } else {
+                estadoUi.edicion = 0;
+            }
+            break;
+        case NOTHING:
+            break;
+        default:
+            break;
+        }
     }
 }

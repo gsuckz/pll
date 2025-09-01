@@ -25,18 +25,19 @@ void tecladoTask(void *tecladoTaskParams)
     int index                     = 0;
     for (;;) {
         int lectura = analogRead(pin);
-        if (lectura > 120)
+        if (lectura > 1215) {
             currentKey = NOTHING;
-        else if (lectura > 110)
+        } else if (lectura > 1120) {
             currentKey = SELECT_KEY;
-        else if (lectura > 95)
+        } else if (lectura > 975) {
             currentKey = LEFT_KEY;
-        else if (lectura > 70)
+        } else if (lectura > 825) {
             currentKey = DOWN_KEY;
-        else if (lectura > 40)
+        } else if (lectura > 375) {
             currentKey = UP_KEY;
-        else
+        } else {
             currentKey = RIGHT_KEY;
+        }
 
         buffer[index] = currentKey;
         index         = (index + 1) % 4;
@@ -45,6 +46,7 @@ void tecladoTask(void *tecladoTaskParams)
             switch (estado) {
             case IDLE:
                 if (currentKey != NOTHING) {
+                    digitalWrite(12, HIGH);
                     lastKey = currentKey;
                     estado  = PRESSED;
                     switch (currentKey) {
@@ -70,6 +72,7 @@ void tecladoTask(void *tecladoTaskParams)
                 break;
             case PRESSED:
                 if (currentKey == NOTHING) {
+                    digitalWrite(12, LOW);
                     estado = IDLE;
                     switch (lastKey) {
                     case SELECT_KEY:

@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-
+#include "interfaz.h"
 /* Definiciones de tipos públicos */
 typedef enum i2cError { ENVIADO = 0, muyLargo, nackAddres, nackData, ERROR, timeout } i2cError;
 typedef enum modo { NORMAL, CP_SINK, CP_SOURCE, CP_DISABLE, COMPARADOR_FASE_TEST } modo;
@@ -33,6 +33,8 @@ int estadoDelSintetizador();
 
 int SintetizadorTick(void);
 
+int sintetizadorEdicion(void);
+
 void enviari2c(uint8_t valor); ///????????????
 
 void configurarBarrido(int min, int max, int duracion);
@@ -41,5 +43,7 @@ void paraBarrido(void);
 
 int sintetizadorFrecuencia(void);
 int sintetizadorEstado();
+
+void sintetizadorTeclado(codigoTecla tecla);
 
 #endif /*SINTETIZADOR_H*/
