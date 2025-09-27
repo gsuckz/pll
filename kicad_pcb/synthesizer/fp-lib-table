@@ -1,0 +1,11 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "QFN50P500X500X100-33N")(type "KiCad")(uri "F:/FACULTAD/PCBs-Proyectos/Library/QFN50P500X500X100-33N")(options "")(descr ""))
+  (lib (name "BCW31_")(type "KiCad")(uri "${KIPRJMOD}/Library/BCW31_")(options "")(descr ""))
+  (lib (name "82_SMA-50-0-21_111_NE")(type "KiCad")(uri "${KIPRJMOD}/Library/82_SMA-50-0-21_111_NE")(options "")(descr ""))
+  (lib (name "CONSMA003.062-L-G")(type "KiCad")(uri "${KIPRJMOD}/Library/CONSMA003.062-L-G")(options "")(descr ""))
+  (lib (name "CONSMA003.031-L-G")(type "KiCad")(uri "${KIPRJMOD}/Library/CONSMA003.031-L-G")(options "")(descr ""))
+  (lib (name "CONSMA020.062-G")(type "KiCad")(uri "${KIPRJMOD}/Library/CONSMA020.062-G")(options "")(descr ""))
+  (lib (name "CONSMA006.062-G")(type "KiCad")(uri "${KIPRJMOD}/Library/CONSMA006.062-G")(options "")(descr ""))
+  (lib (name "huellas_proyecto")(type "KiCad")(uri "${KIPRJMOD}/Library/huellas_proyecto.pretty")(options "")(descr ""))
+)
