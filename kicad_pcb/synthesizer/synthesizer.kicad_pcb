@@ -12821,12 +12821,12 @@
 		(uuid "b9bc4ec3-5b3c-40f5-b0eb-a120e8b7468c")
 	)
 	(segment
-		(start 199.136 104.2129)
-		(end 197.360804 104.2129)
-		(width 1.25)
+		(start 197.51 104.2129)
+		(end 211.7902 104.2129)
+		(width 1)
 		(layer "F.Cu")
 		(net 17)
-		(uuid "4c09360a-5292-4675-8ec0-3a769915b677")
+		(uuid "1b6e1a04-39e6-4838-b7f5-2893a5e1b311")
 	)
 	(segment
 		(start 198.31 104.2129)
@@ -12835,22 +12835,6 @@
 		(layer "F.Cu")
 		(net 17)
 		(uuid "777ddc98-8173-4253-bebf-ab8188b81c13")
-	)
-	(segment
-		(start 198.31 104.2129)
-		(end 199.136 104.2129)
-		(width 1.25)
-		(layer "F.Cu")
-		(net 17)
-		(uuid "bc43ab77-e43c-45e5-99f4-b3c3e000eb2b")
-	)
-	(segment
-		(start 199.136 104.2129)
-		(end 211.7902 104.2129)
-		(width 1.25)
-		(layer "F.Cu")
-		(net 17)
-		(uuid "f3923a50-8d88-4ee4-b849-f6f33ae6441a")
 	)
 	(segment
 		(start 193.4718 100.076)
@@ -13173,7 +13157,7 @@
 		(connect_pads
 			(clearance 0.2)
 		)
-		(min_thickness 0.25)
+		(min_thickness 0.2)
 		(filled_areas_thickness no)
 		(fill yes
 			(thermal_gap 0.5)
