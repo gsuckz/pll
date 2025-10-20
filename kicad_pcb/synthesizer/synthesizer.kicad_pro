@@ -519,7 +519,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "C:/Users/Alexis/Desktop/",
+      "plot": "../out/",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "",
