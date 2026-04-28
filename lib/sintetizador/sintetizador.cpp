@@ -7,7 +7,6 @@
 #include <ctype.h>
 #include <stdint.h>
 
-
 /* Macros */
 
 #define FREC_MIN 10600 // ver si se mantiene
@@ -152,12 +151,8 @@ void SintetizadorCambiaModo(int mode)
 int SintetizadorActualizaEstado()
 {
     uint8_t temp;
-    static int preguntarEstado = 1; // Variable estática para controlar la primera lectura del estado
-    if (preguntarEstado) {
-        Wire.requestFrom(zarlink, 1);
-        digitalWrite(2, LOW);
-        preguntarEstado = 0; // Desactiva la lectura del estado después de la primera vez
-    }
+    Wire.requestFrom(zarlink, 1);
+    digitalWrite(2, LOW);
 
     if (Wire.available()) {
         Wire.readBytes(&temp, 1);
