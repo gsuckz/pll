@@ -1,0 +1,56 @@
+\babel@toc {spanish}{}\relax 
+\contentsline {section}{Resumen}{1}{Doc-Start}%
+\contentsline {section}{\numberline {1}Introducción}{4}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Contexto del sistema}{4}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Aplicación}{4}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Objetivo del trabajo}{4}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Alcance}{4}{subsection.1.4}%
+\contentsline {section}{\numberline {2}Descripción del sistema original}{5}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Arquitectura general}{5}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Funcionamiento}{6}{subsection.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.1}Generación de frecuencia}{6}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.2}Control e interfaz}{6}{subsubsection.2.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.3}Rango de salida RF}{7}{subsubsection.2.2.3}%
+\contentsline {subsection}{\numberline {2.3}Limitaciones detectadas}{7}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Diagnóstico y falla}{7}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Análisis inicial e implementación de hardware de prueba}{7}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Desarrollo de firmware}{8}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Falla principal: daño en el VCO}{8}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}Síntomas observados}{8}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.2}Diagnóstico conclusivo}{9}{subsubsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.4}Reemplazo del VCO (encapsulado QFN)}{9}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Problemas de alimentación y reestructuración}{9}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}Falla y obsolescencia definitiva del hardware heredado}{10}{subsection.3.6}%
+\contentsline {section}{\numberline {4}Rediseño del sistema}{10}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Motivaciones}{10}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Cambios principales respecto al diseño original}{11}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Cambio de plataforma de control}{11}{subsection.4.3}%
+\contentsline {subsubsection}{\numberline {4.3.1}Sistema original: PIC16F873A}{11}{subsubsection.4.3.1}%
+\contentsline {subsubsection}{\numberline {4.3.2}Sistema rediseñado: ESP32}{11}{subsubsection.4.3.2}%
+\contentsline {subsubsection}{\numberline {4.3.3}Justificación de la decisión}{12}{subsubsection.4.3.3}%
+\contentsline {subsection}{\numberline {4.4}Decisiones de diseño relevantes}{12}{subsection.4.4}%
+\contentsline {section}{\numberline {5}Implementación}{12}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Diseño de PCB}{12}{subsection.5.1}%
+\contentsline {subsubsection}{\numberline {5.1.1}Consideraciones de alta frecuencia}{12}{subsubsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.2}Montaje e integración}{13}{subsection.5.2}%
+\contentsline {section}{\numberline {6}Validación funcional}{13}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Metodología de medición}{13}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Ensayos realizados}{14}{subsection.6.2}%
+\contentsline {subsubsection}{\numberline {6.2.1}Prueba de límites físicos del VCO (bomba de carga)}{14}{subsubsection.6.2.1}%
+\contentsline {subsubsection}{\numberline {6.2.2}Validación del enclavamiento de frecuencia}{14}{subsubsection.6.2.2}%
+\contentsline {subsubsection}{\numberline {6.2.3}Barrido de frecuencia (\textit {frequency sweep})}{14}{subsubsection.6.2.3}%
+\contentsline {subsection}{\numberline {6.3}Resultados}{15}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Hardware principal y transmisión de la señal}{15}{subsection.6.4}%
+\contentsline {subsection}{\numberline {6.5}Mediciones adicionales en banco con LNB}{16}{subsection.6.5}%
+\contentsline {paragraph}{Inyector y filtro activo LC (Winegard PS-1403):}{17}{figure.caption.8}%
+\contentsline {paragraph}{Lecturas de frecuencia convertida:}{17}{figure.caption.10}%
+\contentsline {section}{\numberline {7}Resultados y conclusiones}{18}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Logros obtenidos}{18}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Lecciones aprendidas}{18}{subsection.7.2}%
+\contentsline {section}{\numberline {A}Informe de actividades de laboratorio (29/08/2024)}{19}{appendix.Alph1}%
+\contentsline {paragraph}{Descripción del trabajo realizado.}{19}{appendix.Alph1}%
+\contentsline {paragraph}{Procedimiento.}{19}{appendix.Alph1}%
+\contentsline {paragraph}{Resultados y conclusiones.}{19}{Item.12}%
+\contentsline {section}{\numberline {B}Configuración de registros del SP\,5769}{20}{appendix.Alph2}%
+\contentsline {section}{\numberline {C}Mediciones adicionales}{21}{appendix.Alph3}%
+\contentsline {section}{Referencias}{23}{figure.caption.18}%
