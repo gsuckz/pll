@@ -39,7 +39,7 @@ typedef struct CMD {
 } CMD;
 
 static char const *const tabla_cmd[N_COMANDOS] = {"apagar",  "barrer\n3", "cft",        "cpdis",       "cpsnk", "cpsrc",
-                                                  "estado",  "frec\n1",   "frecuencia", "frecuencia?", "frec?", "id?",
+                                                  "estado",  "frec\n1",   "frecuencia\n1", "frecuencia?", "frec?", "id?",
                                                   "iniciar", "reset",     "stop",       "test"};
 
 typedef enum Estado { INICIO, buscaCMD, buscaNUM, blank, ERROR } Estado;
